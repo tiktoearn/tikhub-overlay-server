@@ -48,46 +48,6 @@ const storage = {
         timer: { remaining: 0, isRunning: false },
         topGift: { topGifter: null, gifts: [] },
         topStreak: { topStreaker: null, streaks: [] },
-        topGiftSettings: {
-            fontFamily: 'Comic Sans MS',
-            fontSize: 22,
-            fontLineSpacing: 1.2,
-            fontLetterSpacing: 0,
-            title: 'TOP GIFT',
-            titleSize: 18,
-            titleColor: '#ffffff',
-            usernameColor: '#ffffff',
-            usernameSize: 32,
-            counterColor: '#ffd700',
-            titleVerticalOffset: 20,
-            giftVerticalOffset: 50,
-            usernameVerticalOffset: 125,
-            counterVerticalOffset: 165,
-            enableFontBorder: true,
-            borderColor: '#242424',
-            giftImageVisible: true,
-            giftImageOpacity: 100
-        },
-        topStreakSettings: {
-            fontFamily: 'Comic Sans MS',
-            fontSize: 22,
-            fontLineSpacing: 1.2,
-            fontLetterSpacing: 0,
-            title: 'TOP STREAK',
-            titleSize: 18,
-            titleColor: '#ffffff',
-            usernameColor: '#ffffff',
-            usernameSize: 32,
-            counterColor: '#ffd700',
-            titleVerticalOffset: 20,
-            giftVerticalOffset: 50,
-            usernameVerticalOffset: 125,
-            counterVerticalOffset: 165,
-            enableFontBorder: true,
-            borderColor: '#242424',
-            giftImageVisible: true,
-            giftImageOpacity: 100
-        },
         giftVsGift: { team1: { name: 'Team 1', score: 0 }, team2: { name: 'Team 2', score: 0 } },
         chatOverlaySettings: null,
         // New: current state for minigame rectangle overlay
@@ -376,49 +336,7 @@ app.post('/api/actions', (req, res) => {
     const { actions } = req.body;
     if (Array.isArray(actions)) {
         storage.state.actions = actions;
-        // Broadcast actions update to all connected clients
-        broadcast('actions-updated', { type: 'actions-updated', actions });
         res.json({ success: true, message: 'Actions updated' });
-    } else {
-        res.status(400).json({ success: false, error: 'Actions must be an array' });
-    }
-});
-
-// Initialize server with default data
-app.post('/api/initialize', (req, res) => {
-    const { actions, wheelConfig, wheelConfig2 } = req.body;
-    
-    if (actions && Array.isArray(actions)) {
-        storage.state.actions = actions;
-        console.log(`[Init] Loaded ${actions.length} actions`);
-    }
-    
-    if (wheelConfig && wheelConfig.boxes) {
-        storage.state.luckyWheel = wheelConfig;
-        console.log(`[Init] Loaded wheel 1 with ${wheelConfig.boxes.length} boxes`);
-        // Broadcast to wheel clients
-        broadcast('luckyWheel', { type: 'wheel-config-update', config: wheelConfig });
-    }
-    
-    if (wheelConfig2 && wheelConfig2.boxes) {
-        storage.state.luckyWheel2 = wheelConfig2;
-        console.log(`[Init] Loaded wheel 2 with ${wheelConfig2.boxes.length} boxes`);
-        // Broadcast to wheel 2 clients
-        broadcast('luckyWheel2', { type: 'wheel2-config-update', config: wheelConfig2 });
-    }
-    
-    res.json({ success: true, message: 'Server initialized' });
-});
-
-// Sync actions from main app
-app.post('/api/actions/sync', (req, res) => {
-    const { actions } = req.body;
-    if (Array.isArray(actions)) {
-        storage.state.actions = actions;
-        // Broadcast actions update to all connected clients
-        broadcast('actions-updated', { type: 'actions-updated', actions });
-        console.log(`[Actions] Synced ${actions.length} actions from main app`);
-        res.json({ success: true, message: 'Actions synced' });
     } else {
         res.status(400).json({ success: false, error: 'Actions must be an array' });
     }
@@ -599,37 +517,6 @@ app.post('/api/giftvsgift', (req, res) => {
     console.log(`📡 [GiftVsGift] Config broadcasted to ${storage.clients.giftVsGift.size} clients`);
     
     res.json({ success: true, message: 'Gift vs gift config saved' });
-});
-
-// Top Gift / Top Streak settings APIs
-app.get('/api/topgift-settings', (_req, res) => {
-    res.json({ success: true, settings: storage.state.topGiftSettings });
-});
-
-app.post('/api/topgift-settings', (req, res) => {
-    try {
-        storage.state.topGiftSettings = { ...storage.state.topGiftSettings, ...req.body };
-        broadcast('topGift', { type: 'topgift-settings-update', settings: storage.state.topGiftSettings });
-        res.json({ success: true });
-    } catch (error) {
-        console.error('[Overlay Server] Failed to save top gift settings:', error);
-        res.status(500).json({ success: false, error: 'Failed to save settings' });
-    }
-});
-
-app.get('/api/topstreak-settings', (_req, res) => {
-    res.json({ success: true, settings: storage.state.topStreakSettings });
-});
-
-app.post('/api/topstreak-settings', (req, res) => {
-    try {
-        storage.state.topStreakSettings = { ...storage.state.topStreakSettings, ...req.body };
-        broadcast('topStreak', { type: 'topstreak-settings-update', settings: storage.state.topStreakSettings });
-        res.json({ success: true });
-    } catch (error) {
-        console.error('[Overlay Server] Failed to save top streak settings:', error);
-        res.status(500).json({ success: false, error: 'Failed to save settings' });
-    }
 });
 
 // Generic event broadcast (for any TikTok event)
@@ -830,20 +717,6 @@ wss.on('connection', (ws, req) => {
                 console.error('Failed to send initial state:', error);
             }
         }
-
-        if (overlayType === 'topGift') {
-            try {
-                ws.send(JSON.stringify({ type: 'topgift-settings-update', settings: storage.state.topGiftSettings }));
-            } catch (error) {
-                console.error('[Overlay Server] Failed to send top gift settings on connect:', error);
-            }
-        } else if (overlayType === 'topStreak') {
-            try {
-                ws.send(JSON.stringify({ type: 'topstreak-settings-update', settings: storage.state.topStreakSettings }));
-            } catch (error) {
-                console.error('[Overlay Server] Failed to send top streak settings on connect:', error);
-            }
-        }
     }
     
     // Handle incoming messages from clients
@@ -968,8 +841,8 @@ wss.on('connection', (ws, req) => {
     });
 });
 
-// 404 handler - use bare middleware instead of '*' path to avoid path-to-regexp issues
-app.use((req, res) => {
+// 404 handler
+app.use('*', (req, res) => {
     res.status(404).json({
         success: false,
         error: "Endpoint not found",
@@ -985,8 +858,6 @@ app.use((req, res) => {
             "POST /broadcast-event",
             "GET /api/actions",
             "POST /api/actions",
-            "POST /api/actions/sync",
-            "POST /api/initialize",
             "POST /api/execute-action",
             "GET /api/goal-settings",
             "POST /api/goal-settings",

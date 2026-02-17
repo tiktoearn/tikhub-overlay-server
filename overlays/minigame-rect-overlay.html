@@ -145,8 +145,6 @@
       const root = document.documentElement.style;
       if (!config) return;
 
-      // Renderer saves rectangle* keys (e.g. rectangleEffectImageSize). Fall back to
-      // legacy names if present so older configs still work.
       const effectSize =
         config.rectangleEffectImageSize ?? config.effectImageSize ?? 112;
       const triggerSize =
@@ -163,7 +161,6 @@
 
       root.setProperty('--effect-size', effectSize + 'px');
       root.setProperty('--trigger-size', triggerSize + 'px');
-
       if (config.itemMargin != null) root.setProperty('--item-margin', config.itemMargin + 'px');
       if (config.rectangleItemsPerRow) root.setProperty('--columns', config.rectangleItemsPerRow);
       if (config.countSize) root.setProperty('--count-size', config.countSize + 'px');

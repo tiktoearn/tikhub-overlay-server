@@ -41153,8 +41153,10 @@ const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js"
 const boxes_1 = __webpack_require__(/*! ../assets/boxes */ "./src/assets/boxes/index.ts");
 const overlayUtils_1 = __webpack_require__(/*! ../utils/overlayUtils */ "./src/utils/overlayUtils.ts");
 exports.DEFAULT_BOXES = [
-    { builtInImage: '', frequency: 1, text: '', mode: 'text' },
-    { builtInImage: '', frequency: 1, text: '', mode: 'text' },
+    { builtInImage: 'pink.png', frequency: 1, text: 'WIN', mode: 'text' },
+    { builtInImage: 'red.png', frequency: 1, text: 'WIN', mode: 'text' },
+    { builtInImage: 'orange.png', frequency: 1, text: 'WIN', mode: 'text' },
+    { builtInImage: 'yellow.png', frequency: 1, text: 'WIN', mode: 'text' },
 ];
 const LOCAL_STORAGE_KEY = 'luckyWheelConfig';
 // List of built-in box images
