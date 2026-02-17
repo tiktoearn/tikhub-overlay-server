@@ -1,0 +1,137 @@
+====================================================================
+LUCKY WHEEL 2 OVERLAY DEPLOYMENT INSTRUCTIONS
+====================================================================
+
+STEP 1: Open PowerShell or Command Prompt
+------------------------------------------
+Navigate to the overlay server folder:
+
+    cd "E:\Electron - Copy (4)\tikhub-overlay-server"
+
+
+STEP 2: Check Git Status
+-------------------------
+Run this command to see if the file is tracked:
+
+    git status
+
+
+STEP 3: Add and Commit the File
+--------------------------------
+    git add overlays/luckywheel2-overlay.html
+    git commit -m "Add Lucky Wheel 2 overlay HTML"
+
+
+STEP 4: Push to GitHub
+-----------------------
+    git push origin main
+
+(If main doesn't work, try: git push origin master)
+
+
+STEP 5: Verify on GitHub
+-------------------------
+Open your browser and go to:
+
+    https://github.com/Kingallan112/tikhub-overlay-server/tree/main/overlays
+
+Check if "luckywheel2-overlay.html" appears in the list.
+
+
+STEP 6: Wait for Render Deployment
+-----------------------------------
+1. Go to: https://dashboard.render.com
+2. Find your "tikhub-overlay-server" service
+3. Wait 2-3 minutes for auto-deployment
+4. Look for "Deploy succeeded" notification
+
+
+STEP 7: Test the Overlay
+-------------------------
+Open this URL in your browser:
+
+    https://tikhub-overlay-server.onrender.com/luckywheel2-overlay.html
+
+Expected: A transparent wheel overlay (not an error message)
+
+
+ALTERNATIVE: Manual Render Deploy
+----------------------------------
+If auto-deploy doesn't work:
+1. Go to Render dashboard
+2. Select "tikhub-overlay-server"
+3. Click "Manual Deploy" → "Deploy latest commit"
+
+
+====================================================================
+
+
+
+LUCKY WHEEL 2 OVERLAY DEPLOYMENT INSTRUCTIONS
+====================================================================
+
+STEP 1: Open PowerShell or Command Prompt
+------------------------------------------
+Navigate to the overlay server folder:
+
+    cd "E:\Electron - Copy (4)\tikhub-overlay-server"
+
+
+STEP 2: Check Git Status
+-------------------------
+Run this command to see if the file is tracked:
+
+    git status
+
+
+STEP 3: Add and Commit the File
+--------------------------------
+    git add overlays/luckywheel2-overlay.html
+    git commit -m "Add Lucky Wheel 2 overlay HTML"
+
+
+STEP 4: Push to GitHub
+-----------------------
+    git push origin main
+
+(If main doesn't work, try: git push origin master)
+
+
+STEP 5: Verify on GitHub
+-------------------------
+Open your browser and go to:
+
+    https://github.com/Kingallan112/tikhub-overlay-server/tree/main/overlays
+
+Check if "luckywheel2-overlay.html" appears in the list.
+
+
+STEP 6: Wait for Render Deployment
+-----------------------------------
+1. Go to: https://dashboard.render.com
+2. Find your "tikhub-overlay-server" service
+3. Wait 2-3 minutes for auto-deployment
+4. Look for "Deploy succeeded" notification
+
+
+STEP 7: Test the Overlay
+-------------------------
+Open this URL in your browser:
+
+    https://tikhub-overlay-server.onrender.com/luckywheel2-overlay.html
+
+Expected: A transparent wheel overlay (not an error message)
+
+
+ALTERNATIVE: Manual Render Deploy
+----------------------------------
+If auto-deploy doesn't work:
+1. Go to Render dashboard
+2. Select "tikhub-overlay-server"
+3. Click "Manual Deploy" → "Deploy latest commit"
+
+
+====================================================================
+
+
+

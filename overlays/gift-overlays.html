@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikHub Gift Overlays</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        .overlay-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .overlay {
+            position: absolute;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .top-gift {
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            border: 2px solid #ff6b6b;
+        }
+        
+        .top-streak {
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            border: 2px solid #4CAF50;
+        }
+        
+        .gift-counter {
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            border: 2px solid #2196F3;
+            text-align: center;
+        }
+        
+        .overlay.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        
+        .overlay.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .gift-image {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .streak-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .crown-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .counter-item {
+            margin: 4px 0;
+        }
+        
+        .counter-value {
+            font-size: 18px;
+            color: #2196F3;
+            font-weight: bold;
+        }
+        
+        .counter-label {
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .coins-value {
+            color: #ffd700;
+        }
+        
+        .gifters-value {
+            color: #4CAF50;
+        }
+        
+        .top-gift-value {
+            color: #ff6b6b;
+        }
+        
+        .streak-value {
+            color: #4CAF50;
+        }
+        
+        .username {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .gift-name {
+            color: #ffd700;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #fff;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div id="topGiftOverlay" class="overlay top-gift hidden">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="position: relative;">
+                    <img id="topGiftImage" class="gift-image" src="🎁" alt="Gift">
+                    <div class="crown-badge">👑</div>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 18px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">TOP GIFT</div>
+                    <div id="topGiftName" class="gift-name" style="font-size: 16px; margin-bottom: 2px;">Rose</div>
+                    <div id="topGiftUsername" class="username" style="font-size: 14px; margin-bottom: 2px;">by viewer123</div>
+                    <div id="topGiftCoins" class="coins-value" style="font-size: 14px; font-weight: bold;">50 coins</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="topStreakOverlay" class="overlay top-streak hidden">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="position: relative;">
+                    <img id="topStreakImage" class="gift-image" src="🎁" alt="Gift">
+                    <div id="topStreakBadge" class="streak-badge">5</div>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 18px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">TOP STREAK</div>
+                    <div id="topStreakUsername" class="username" style="font-size: 16px; margin-bottom: 2px;">viewer123</div>
+                    <div id="topStreakGiftName" class="gift-name" style="font-size: 14px; margin-bottom: 2px;">Rose</div>
+                    <div id="topStreakCount" class="streak-value" style="font-size: 14px; font-weight: bold;">5 streak</div>
+                    <div id="topStreakCoins" class="coins-value" style="font-size: 12px; margin-top: 2px;">250 total coins</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="giftCounterOverlay" class="overlay gift-counter hidden">
+            <div style="font-size: 20px; margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);">🎁 GIFT COUNTER</div>
+            <div class="counter-item">
+                <div id="totalGifts" class="counter-value">1,234</div>
+                <div class="counter-label">gifts</div>
+            </div>
+            <div class="counter-item">
+                <div id="totalCoins" class="counter-value coins-value">5,678</div>
+                <div class="counter-label">coins</div>
+            </div>
+            <div class="counter-item">
+                <div id="uniqueGifters" class="counter-value gifters-value">42</div>
+                <div class="counter-label">gifters</div>
+            </div>
+            <div id="topGiftInfo" class="counter-item" style="margin-top: 8px; padding: 4px 8px; background: rgba(255, 152, 0, 0.1); border-radius: 4px;">
+                <div style="font-size: 12px; color: #ff9800;">Top: Rose (15)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading" class="loading">
+        Connecting to TikHub...
+    </div>
+
+    <script>
+        // WebSocket connection for real-time updates
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        const OVERLAY_SERVER_URL = 'wss://tikhub-overlay-server.onrender.com';
+        
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(OVERLAY_SERVER_URL + '/ws/gifts');
+                
+                ws.onopen = () => {
+                    console.log('Connected to TikHub WebSocket');
+                    document.getElementById('loading').style.display = 'none';
+                    reconnectAttempts = 0;
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('Received data:', data);
+                        
+                        if (data.type === 'tiktok-event' && data.event && data.event.type === 'gift') {
+                            updateOverlays(data.event);
+                        }
+                    } catch (error) {
+                        console.error('Error processing message:', error);
+                    }
+                };
+                
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    document.getElementById('loading').style.display = 'flex';
+                    
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        console.log(`Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                        setTimeout(connectWebSocket, 2000 * reconnectAttempts);
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+            } catch (error) {
+                console.error('Error connecting to WebSocket:', error);
+            }
+        }
+        
+        function updateOverlays(giftData) {
+            // Update top gift overlay
+            updateTopGift(giftData);
+            
+            // Update top streak overlay
+            updateTopStreak(giftData);
+            
+            // Update gift counter overlay
+            updateGiftCounter(giftData);
+        }
+        
+        function updateTopGift(giftData) {
+            const overlay = document.getElementById('topGiftOverlay');
+            const image = document.getElementById('topGiftImage');
+            const name = document.getElementById('topGiftName');
+            const username = document.getElementById('topGiftUsername');
+            const coins = document.getElementById('topGiftCoins');
+            
+            if (giftData.giftImage) {
+                image.src = giftData.giftImage;
+            }
+            name.textContent = giftData.giftName || 'Unknown Gift';
+            username.textContent = `by ${giftData.nickname || 'Anonymous'}`;
+            coins.textContent = `${giftData.diamondCount || 0} coins`;
+            
+            showOverlay(overlay);
+        }
+        
+        // Track combo groups for proper final streak display
+        const comboGroups = new Map(); // groupId -> { lastCount, timeoutId }
+        function updateTopStreak(giftData) {
+            const overlay = document.getElementById('topStreakOverlay');
+            const image = document.getElementById('topStreakImage');
+            const username = document.getElementById('topStreakUsername');
+            const giftName = document.getElementById('topStreakGiftName');
+            const streakCount = document.getElementById('topStreakCount');
+            const coins = document.getElementById('topStreakCoins');
+            const badge = document.getElementById('topStreakBadge');
+            
+            if (giftData.giftImage) {
+                image.src = giftData.giftImage;
+            }
+            username.textContent = giftData.nickname || 'Anonymous';
+            giftName.textContent = giftData.giftName || 'Unknown Gift';
+
+            const isStreakable = Number(giftData.giftType) === 1;
+            const groupId = giftData.groupId || 'single';
+            const count = Number(giftData.repeatCount || 1);
+
+            if (!isStreakable) {
+                // Non-streak gifts: just display the single count
+                badge.textContent = String(count);
+                streakCount.textContent = `${count} streak`;
+                const totalCoins = (giftData.diamondCount || 0) * count;
+                coins.textContent = `${totalCoins} total coins`;
+                showOverlay(overlay);
+                return;
+            }
+
+            // Streakable: aggregate by groupId and only show at final (or timeout fallback)
+            let entry = comboGroups.get(groupId);
+            if (!entry) { entry = { lastCount: 0, timeoutId: null }; comboGroups.set(groupId, entry); }
+            entry.lastCount = Math.max(entry.lastCount || 0, count);
+            if (entry.timeoutId) clearTimeout(entry.timeoutId);
+            entry.timeoutId = setTimeout(() => {
+                const e = comboGroups.get(groupId);
+                if (!e) return;
+                const finalCount = e.lastCount || count || 1;
+                badge.textContent = String(finalCount);
+                streakCount.textContent = `${finalCount} streak`;
+                const totalCoins2 = (giftData.diamondCount || 0) * finalCount;
+                coins.textContent = `${totalCoins2} total coins`;
+                showOverlay(overlay);
+                comboGroups.delete(groupId);
+            }, 1200);
+
+            if (giftData.repeatEnd === true) {
+                clearTimeout(entry.timeoutId);
+                const finalCount = entry.lastCount || count || 1;
+                badge.textContent = String(finalCount);
+                streakCount.textContent = `${finalCount} streak`;
+                const totalCoins = (giftData.diamondCount || 0) * finalCount;
+                coins.textContent = `${totalCoins} total coins`;
+                showOverlay(overlay);
+                comboGroups.delete(groupId);
+            }
+        }
+        
+        function updateGiftCounter(giftData) {
+            const overlay = document.getElementById('giftCounterOverlay');
+            const totalGifts = document.getElementById('totalGifts');
+            const totalCoins = document.getElementById('totalCoins');
+            const uniqueGifters = document.getElementById('uniqueGifters');
+            const topGiftInfo = document.getElementById('topGiftInfo');
+            
+            // Update counters (in real app, these would be persistent)
+            const currentGifts = parseInt(totalGifts.textContent.replace(/,/g, '')) || 0;
+            const currentCoins = parseInt(totalCoins.textContent.replace(/,/g, '')) || 0;
+            const currentGifters = parseInt(uniqueGifters.textContent) || 0;
+            
+            totalGifts.textContent = (currentGifts + (giftData.repeatCount || 1)).toLocaleString();
+            totalCoins.textContent = (currentCoins + (giftData.diamondCount || 0)).toLocaleString();
+            uniqueGifters.textContent = currentGifters + 1;
+            
+            topGiftInfo.textContent = `Top: ${giftData.giftName || 'Unknown'} (${giftData.repeatCount || 1})`;
+            
+            showOverlay(overlay);
+        }
+        
+        function showOverlay(overlay) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('visible');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                overlay.classList.remove('visible');
+                overlay.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // Initialize
+        connectWebSocket();
+        
+        // Simulate some initial data for demo
+        setTimeout(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                updateOverlays({
+                    giftName: 'Rose',
+                    giftImage: '🌹',
+                    diamondCount: 50,
+                    nickname: 'viewer123',
+                    repeatCount: 1
+                });
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
+

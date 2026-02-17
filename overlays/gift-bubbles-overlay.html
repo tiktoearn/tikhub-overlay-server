@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Bubble Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .bubble-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+
+                 .real-bubble {
+             position: absolute;
+             background: radial-gradient(circle at 30% 30%, 
+                rgba(255,255,255,0.4) 0%, 
+                rgba(255,255,255,0.1) 40%, 
+                rgba(255,255,255,0.05) 70%, 
+                transparent 100%);
+            border: 1px solid rgba(255,255,255,0.3);
+             border-radius: 50%;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             justify-content: center;
+            backdrop-filter: blur(1px);
+            animation: floatBubble 15s ease-in-out infinite;
+        }
+
+        .real-bubble.small {
+            width: 80px;
+            height: 80px;
+            font-size: 12px;
+        }
+
+        .real-bubble.medium {
+            width: 100px;
+            height: 100px;
+            font-size: 14px;
+        }
+
+        .real-bubble.large {
+            width: 120px;
+            height: 120px;
+            font-size: 16px;
+        }
+
+        /* Realistic bubble shine */
+        .bubble-shine {
+            position: absolute;
+            top: 20%;
+            left: 25%;
+            width: 25%;
+            height: 25%;
+            background: radial-gradient(circle, 
+                rgba(255,255,255,0.8) 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                transparent 100%);
+            border-radius: 50%;
+            animation: shine 4s ease-in-out infinite;
+        }
+
+        /* Secondary shine */
+        .bubble-shine-2 {
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 15%;
+            height: 15%;
+            background: radial-gradient(circle, 
+                rgba(255,255,255,0.6) 0%, 
+                rgba(255,255,255,0.2) 50%, 
+                transparent 100%);
+            border-radius: 50%;
+            animation: shine 3s ease-in-out infinite reverse;
+        }
+
+        .gift-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .gift-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+        }
+
+        .gift-image {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-bottom: 4px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+            border-radius: 4px;
+        }
+
+        /* Larger gift images for bigger bubbles */
+        .large .gift-image {
+            width: 60px;
+            height: 60px;
+        }
+
+        .medium .gift-image {
+            width: 55px;
+            height: 55px;
+        }
+
+                 .gift-name {
+            color: #fff;
+             font-weight: bold;
+             text-align: center;
+             margin-bottom: 2px;
+            text-shadow: 
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000,
+                0 0 3px rgba(0,0,0,0.8),
+                0 2px 4px rgba(0,0,0,0.6);
+         }
+
+         .username {
+            color: #fff;
+             font-size: 0.8em;
+             text-align: center;
+             font-weight: 600;
+            text-shadow: 
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000,
+                0 0 3px rgba(0,0,0,0.8),
+                0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        .coin-value {
+            color: #ffd700;
+            font-size: 0.7em;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 2px;
+            text-shadow: 
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000,
+                0 0 3px rgba(0,0,0,0.8),
+                0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        @keyframes floatBubble {
+            0% {
+                transform: translateY(100vh) translateX(0) scale(0.3) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                transform: translateY(90vh) translateX(20px) scale(1) rotate(5deg);
+                opacity: 1;
+            }
+            25% {
+                transform: translateY(75vh) translateX(-30px) scale(1.1) rotate(-3deg);
+                opacity: 1;
+            }
+            40% {
+                transform: translateY(60vh) translateX(40px) scale(1) rotate(8deg);
+                opacity: 1;
+            }
+            55% {
+                transform: translateY(45vh) translateX(-20px) scale(1.05) rotate(-5deg);
+                opacity: 1;
+            }
+            70% {
+                transform: translateY(30vh) translateX(35px) scale(1) rotate(3deg);
+                opacity: 1;
+            }
+            85% {
+                transform: translateY(15vh) translateX(-25px) scale(0.9) rotate(-2deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(0vh) translateX(0) scale(0.8) rotate(0deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shine {
+            0%, 100% { 
+                opacity: 0.7; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scale(1.1);
+            }
+        }
+
+        /* Bubble pop effect */
+        .bubble-pop {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, 
+                rgba(255,255,255,0.6) 0%, 
+                rgba(255,255,255,0.2) 50%, 
+                transparent 100%);
+            border-radius: 50%;
+            animation: pop 0.8s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.8);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        /* Bubble wobble effect */
+        .real-bubble {
+            animation: floatBubble 15s ease-in-out infinite, wobble 3s ease-in-out infinite;
+        }
+
+        @keyframes wobble {
+            0%, 100% { border-radius: 50%; }
+            25% { border-radius: 45% 55% 55% 45%; }
+            50% { border-radius: 55% 45% 45% 55%; }
+            75% { border-radius: 50% 50% 45% 55%; }
+        }
+
+        /* Rainbow effect for expensive gifts */
+        .real-bubble.rainbow {
+            background: radial-gradient(circle at 30% 30%, 
+                rgba(255,182,193,0.3) 0%, 
+                rgba(173,216,230,0.2) 30%, 
+                rgba(144,238,144,0.1) 60%, 
+                rgba(255,255,224,0.05) 80%, 
+                transparent 100%);
+            animation: floatBubble 15s ease-in-out infinite, wobble 3s ease-in-out infinite, rainbowShift 6s ease-in-out infinite;
+        }
+
+        @keyframes rainbowShift {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(180deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bubble-container" id="bubbleContainer"></div>
+
+    <script>
+        class RealBubbleOverlay {
+            constructor() {
+                this.container = document.getElementById('bubbleContainer');
+                this.bubbleCount = 0;
+                this.maxBubbles = 6;
+            }
+
+            createBubble(giftData) {
+                if (this.bubbleCount >= this.maxBubbles) return;
+
+                const bubble = document.createElement('div');
+                bubble.className = `real-bubble ${this.getBubbleSize(giftData.coins)}`;
+                
+                // Add rainbow effect for expensive gifts
+                if (giftData.coins >= 1000) {
+                     bubble.classList.add('rainbow');
+                 }
+
+                const startX = Math.random() * (window.innerWidth - 120);
+                bubble.style.left = `${startX}px`;
+
+                // Add shine effects
+                    const shine1 = document.createElement('div');
+                    shine1.className = 'bubble-shine';
+                    bubble.appendChild(shine1);
+
+                    const shine2 = document.createElement('div');
+                    shine2.className = 'bubble-shine-2';
+                    bubble.appendChild(shine2);
+
+                // Add gift content
+                const content = document.createElement('div');
+                content.className = 'gift-content';
+                
+                // Check if gift has an image URL
+                const giftImageUrl = giftData.giftPictureUrl || giftData.giftImage || '';
+                
+                if (giftImageUrl) {
+                    // Use real gift image
+                    content.innerHTML = `
+                        <img src="${giftImageUrl}" class="gift-image" alt="${giftData.giftName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                        <div class="gift-icon" style="display: none;">${this.getGiftIcon(giftData.giftName)}</div>
+                        <div class="gift-name">${giftData.giftName}</div>
+                        <div class="username">@${giftData.username}</div>
+                    `;
+                } else {
+                    // Fallback to emoji
+                    content.innerHTML = `
+                        <div class="gift-icon">${this.getGiftIcon(giftData.giftName)}</div>
+                        <div class="gift-name">${giftData.giftName}</div>
+                        <div class="username">@${giftData.username}</div>
+                    `;
+                }
+                bubble.appendChild(content);
+
+                this.container.appendChild(bubble);
+                this.bubbleCount++;
+
+                setTimeout(() => {
+                    this.createPopEffect(bubble);
+                    setTimeout(() => {
+                        if (bubble.parentNode) {
+                            bubble.parentNode.removeChild(bubble);
+                            this.bubbleCount--;
+                        }
+                    }, 800);
+                }, 15000);
+            }
+
+            getBubbleSize(coins) {
+                if (coins >= 1000) return 'large';
+                if (coins >= 100) return 'medium';
+                return 'small';
+            }
+
+            getGiftIcon(giftName) {
+                const icons = {
+                    'rose': '🌹',
+                    'diamond': '💎',
+                    'crown': '👑',
+                    'heart': '❤️',
+                    'star': '⭐',
+                    'coin': '',
+                    'gift': '🎁',
+                    'default': '🎁'
+                };
+                if (giftName.toLowerCase() === 'coin') {
+                    return '';
+                }
+                return icons[giftName.toLowerCase()] || icons.default;
+            }
+
+            createPopEffect(bubble) {
+                const pop = document.createElement('div');
+                pop.className = 'bubble-pop';
+                pop.style.left = bubble.offsetLeft + 'px';
+                pop.style.top = bubble.offsetTop + 'px';
+                this.container.appendChild(pop);
+
+                    setTimeout(() => {
+                    if (pop.parentNode) {
+                        pop.parentNode.removeChild(pop);
+                    }
+                }, 800);
+            }
+
+            simulateGift() {
+                const gifts = [
+                    { giftName: 'Rose', username: 'viewer1', coins: 50 },
+                    { giftName: 'Diamond', username: 'bigspender', coins: 1000 },
+                    { giftName: 'Heart', username: 'fan123', coins: 100 }
+                ];
+                
+                const randomGift = gifts[Math.floor(Math.random() * gifts.length)];
+                this.createBubble(randomGift);
+            }
+        }
+
+        const overlay = new RealBubbleOverlay();
+
+        // Connect to WebSocket for real gift events (use same host/port as overlay server)
+        const wsUrl = (location.origin.replace(/^http/, 'ws')) + '/ws/gift-bubbles';
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+            console.log('Gift Bubbles Overlay: Connected to WebSocket server');
+        };
+        
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('[Gift Bubbles] Received WebSocket data:', data);
+                
+                if (data.type === 'gift' || data.event === 'gift') {
+                    // Server wraps in giftData, check both levels
+                    const source = data.giftData || data;
+                    
+                    const giftData = {
+                        giftName: source.giftName || source.gift?.giftName || source.name || 'Gift',
+                        username: source.nickname || source.username || source.uniqueId || 'Viewer',
+                        coins: source.diamondCount || source.coins || source.gift?.diamondCount || 50,
+                        giftPictureUrl: source.giftPictureUrl || source.giftImage || source.gift?.image || source.image || '',
+                        giftImage: source.giftPictureUrl || source.giftImage || source.gift?.image || source.image || ''
+                    };
+                    
+                    console.log('[Gift Bubbles] Parsed gift data:', giftData);
+                    overlay.createBubble(giftData);
+                }
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        
+        ws.onclose = () => {
+            console.log('Gift Bubbles Overlay: WebSocket connection closed');
+        };
+
+        // Test mode (only if WebSocket fails)
+        setTimeout(() => {
+            if (ws.readyState !== WebSocket.OPEN) {
+                console.log('WebSocket not connected, starting test mode');
+                setInterval(() => {
+                    overlay.simulateGift();
+                }, 4000);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

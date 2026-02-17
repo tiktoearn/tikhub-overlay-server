@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Streak Overlay - TikHub</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        .overlay-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+        .streak-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 200px;
+            background: transparent;
+            color: #fff;
+        }
+        .streak-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.5;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .title,
+        .username,
+        .streak-value {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            text-shadow: 2px 2px 0px #242424;
+            z-index: 2;
+        }
+        .title { top: 20px; font-size: 18px; }
+        .username { top: 125px; font-size: 32px; }
+        .streak-value { top: 165px; font-size: 22px; }
+        .connection-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div class="streak-overlay" id="streakOverlay" style="display: none;">
+            <div class="streak-image" id="streakImage"></div>
+            <div class="title" id="title">Top Streak</div>
+            <div class="username" id="username">Viewer</div>
+            <div class="streak-value" id="streakValue">x0</div>
+        </div>
+        <div class="connection-status" id="connectionStatus">Connecting to stream...</div>
+    </div>
+
+    <script>
+        (function () {
+            const defaultSettings = {
+                fontFamily: 'Comic Sans MS',
+                fontSize: 22,
+                fontLineSpacing: 1.2,
+                fontLetterSpacing: 0,
+                title: 'TOP STREAK',
+                titleSize: 18,
+                titleColor: '#ffffff',
+                usernameColor: '#ffffff',
+                usernameSize: 32,
+                counterColor: '#ffd700',
+                titleVerticalOffset: 20,
+                giftVerticalOffset: 50,
+                usernameVerticalOffset: 125,
+                counterVerticalOffset: 165,
+                enableFontBorder: true,
+                borderColor: '#242424',
+                giftImageVisible: true,
+                giftImageOpacity: 100
+            };
+
+            let settings = { ...defaultSettings };
+            const defaultStreakImage = 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.webp';
+            let topStreak = {
+                username: 'Viewer',
+                streakValue: 0,
+                streakImage: defaultStreakImage
+            };
+            let isConnected = false;
+
+            const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const apiBase = useLocal ? `${window.location.protocol}//${window.location.host}` : 'https://tikhub-overlay-server.onrender.com';
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/topstreak` : 'wss://tikhub-overlay-server.onrender.com/ws/topstreak';
+            const RECONNECT_DELAY = 4000;
+
+            function applySettings(newSettings) {
+                settings = { ...settings, ...newSettings };
+
+                const titleEl = document.getElementById('title');
+                const usernameEl = document.getElementById('username');
+                const valueEl = document.getElementById('streakValue');
+                const imageEl = document.getElementById('streakImage');
+
+                titleEl.textContent = settings.title;
+                titleEl.style.fontSize = `${settings.titleSize}px`;
+                titleEl.style.color = settings.titleColor;
+                titleEl.style.top = `${settings.titleVerticalOffset}px`;
+                titleEl.style.textShadow = settings.enableFontBorder ? `2px 2px 0px ${settings.borderColor}` : 'none';
+
+                usernameEl.style.fontSize = `${settings.usernameSize}px`;
+                usernameEl.style.color = settings.usernameColor;
+                usernameEl.style.top = `${settings.usernameVerticalOffset}px`;
+                usernameEl.style.textShadow = settings.enableFontBorder ? `2px 2px 0px ${settings.borderColor}` : 'none';
+
+                valueEl.style.fontSize = `${settings.fontSize}px`;
+                valueEl.style.color = settings.counterColor;
+                valueEl.style.top = `${settings.counterVerticalOffset}px`;
+                valueEl.style.textShadow = settings.enableFontBorder ? `2px 2px 0px ${settings.borderColor}` : 'none';
+
+                const fontTargets = document.querySelectorAll('.title, .username, .streak-value');
+                fontTargets.forEach(el => {
+                    el.style.fontFamily = settings.fontFamily;
+                    el.style.letterSpacing = `${settings.fontLetterSpacing}px`;
+                    el.style.lineHeight = `${settings.fontLineSpacing}`;
+                });
+
+                const opacity = settings.giftImageVisible ? settings.giftImageOpacity / 100 : 0;
+                imageEl.style.opacity = opacity;
+                imageEl.style.top = `${settings.giftVerticalOffset}px`;
+
+                updateOverlay();
+            }
+
+            async function loadInitialSettings() {
+                if (useLocal) {
+                    try {
+                        const response = await fetch(`${apiBase}/api/topstreak-settings`);
+                        const data = await response.json();
+                        if (data?.settings) {
+                            applySettings(data.settings);
+                            return;
+                        }
+                    } catch (error) {
+                        console.warn('[TopStreak] Failed to fetch settings from local API:', error);
+                    }
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                const fallback = {
+                    title: params.get('title') || settings.title,
+                    titleSize: Number(params.get('titleSize') || settings.titleSize),
+                    usernameSize: Number(params.get('usernameSize') || settings.usernameSize),
+                    fontSize: Number(params.get('fontSize') || settings.fontSize),
+                    titleColor: params.get('titleColor') || settings.titleColor,
+                    usernameColor: params.get('usernameColor') || settings.usernameColor,
+                    counterColor: params.get('counterColor') || settings.counterColor,
+                    fontFamily: params.get('fontFamily') || settings.fontFamily,
+                    giftImageOpacity: Number(params.get('giftImageOpacity') || settings.giftImageOpacity)
+                };
+                applySettings(fallback);
+            }
+
+            function updateOverlay() {
+                const overlay = document.getElementById('streakOverlay');
+                const statusEl = document.getElementById('connectionStatus');
+                const imageEl = document.getElementById('streakImage');
+                const usernameEl = document.getElementById('username');
+                const valueEl = document.getElementById('streakValue');
+
+                const imageSource = topStreak.streakImage || defaultStreakImage;
+                if (settings.giftImageVisible) {
+                    imageEl.style.backgroundImage = `url(${imageSource})`;
+                } else {
+                    imageEl.style.backgroundImage = 'none';
+                }
+
+                usernameEl.textContent = topStreak.username;
+                const baseCount = `x${Number(topStreak.streakValue || 0).toLocaleString()}`;
+                const valueSuffix = topStreak.totalValue ? ` • ${Number(topStreak.totalValue).toLocaleString()} coins` : '';
+                valueEl.textContent = `${baseCount}${valueSuffix}`;
+
+                overlay.style.display = 'block';
+                statusEl.style.display = isConnected ? 'none' : 'block';
+            }
+
+            function updateConnectionStatus(message) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.textContent = message;
+                statusEl.style.display = 'block';
+                document.getElementById('streakOverlay').style.display = 'none';
+            }
+
+            function connectWebSocket() {
+                const ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log('[TopStreak] Connected to overlay WebSocket');
+                    isConnected = true;
+                    updateOverlay();
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                if ((data.type === 'streak' || data.type === 'topstreak-update') && data.streakData) {
+                    const streak = data.streakData;
+                    const streakData = {
+                        username: streak.nickname || streak.username || 'Anonymous',
+                        streakValue: streak.combo || streak.streakValue || 0,
+                        streakImage: streak.giftPictureUrl || streak.giftImage || '',
+                        totalValue: Number(streak.totalValue || 0)
+                    };
+                    topStreak = streakData;
+                    updateOverlay();
+                } else if (data.type === 'topstreak-snapshot' && data.top) {
+                    const snap = data.top;
+                    topStreak = {
+                        username: snap.username || 'Anonymous',
+                        streakValue: Number(snap.combo || snap.streakValue || 0) || 0,
+                        streakImage: snap.giftImage || '',
+                        totalValue: Number(snap.totalValue || 0)
+                    };
+                    updateOverlay();
+                } else if (data.type === 'topstreak-settings-update' && data.settings) {
+                            applySettings(data.settings);
+                        } else if (data.type === 'topstreak-reset') {
+                            topStreak = { username: 'Viewer', streakValue: 0, streakImage: '', totalValue: 0 };
+                            updateOverlay();
+                        }
+                    } catch (error) {
+                        console.error('[TopStreak] Error parsing message:', error);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('[TopStreak] WebSocket disconnected');
+                    isConnected = false;
+                    updateConnectionStatus('Disconnected from stream');
+                    if (useLocal) {
+                        setTimeout(connectWebSocket, RECONNECT_DELAY);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('[TopStreak] WebSocket error:', error);
+                    ws.close();
+                };
+            }
+
+            loadInitialSettings().finally(() => {
+                updateOverlay();
+                connectWebSocket();
+            });
+        })();
+    </script>
+</body>
+</html>
+
+            document.getElementById('title').style.color = titleColor;
+            document.getElementById('username').style.color = usernameColor;
+            document.getElementById('streakCount').style.color = counterColor;
+            
+            // Apply font family to all text elements
+            const textElements = document.querySelectorAll('.title, .username, .streak-count');
+            textElements.forEach(el => {
+                el.style.fontFamily = fontFamily;
+            });
+
+            // Apply gift image opacity
+            document.getElementById('giftImage').style.opacity = giftImageOpacity / 100;
+        }
+
+        // Load settings when page loads
+        loadSettings();
+    </script>
+</body>
+</html>

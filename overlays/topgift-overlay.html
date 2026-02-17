@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Gift Overlay - TikHub</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        .overlay-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+        .gift-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 200px;
+            background: transparent;
+            color: #fff;
+        }
+        .gift-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.5;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .title,
+        .username,
+        .gift-value {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            text-shadow: 2px 2px 0px #242424;
+            z-index: 2;
+        }
+        .title { top: 20px; font-size: 18px; }
+        .username { top: 125px; font-size: 32px; }
+        .gift-value { top: 165px; font-size: 22px; }
+        .connection-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div class="gift-overlay" id="giftOverlay" style="display: none;">
+            <div class="gift-image" id="giftImage"></div>
+            <div class="title" id="title">Top Gift</div>
+            <div class="username" id="username">Viewer</div>
+            <div class="gift-value" id="giftValue">0 coins</div>
+        </div>
+        <div class="connection-status" id="connectionStatus">Connecting to stream...</div>
+    </div>
+
+    <script>
+        (function () {
+            const defaultSettings = {
+                fontFamily: 'Comic Sans MS',
+                fontSize: 22,
+                fontLineSpacing: 1.2,
+                fontLetterSpacing: 0,
+                title: 'TOP GIFT',
+                titleSize: 18,
+                titleColor: '#ffffff',
+                usernameColor: '#ffffff',
+                usernameSize: 32,
+                counterColor: '#ffd700',
+                titleVerticalOffset: 20,
+                giftVerticalOffset: 50,
+                usernameVerticalOffset: 125,
+                counterVerticalOffset: 165,
+                enableFontBorder: true,
+                borderColor: '#242424',
+                giftImageVisible: true,
+                giftImageOpacity: 100
+            };
+
+            let settings = { ...defaultSettings };
+            const defaultGiftImage = 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/1d067d13988e8754ed6adbebd89b9ee8.png~tplv-obj.webp';
+            let topGift = {
+                username: 'Viewer',
+                giftName: 'Gift',
+                giftValue: 0,
+                giftImage: defaultGiftImage
+            };
+            let isConnected = false;
+
+            const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const apiBase = useLocal ? `${window.location.protocol}//${window.location.host}` : 'https://overlay.tiktoearn.site';
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/topgift` : 'wss://overlay.tiktoearn.site/ws/topgift';
+            const RECONNECT_DELAY = 4000;
+
+            function applySettings(newSettings) {
+                settings = { ...settings, ...newSettings };
+
+                const titleEl = document.getElementById('title');
+                const usernameEl = document.getElementById('username');
+                const valueEl = document.getElementById('giftValue');
+                const imageEl = document.getElementById('giftImage');
+
+                titleEl.textContent = settings.title;
+                titleEl.style.fontSize = `${settings.titleSize}px`;
+                titleEl.style.color = settings.titleColor;
+                titleEl.style.top = `${settings.titleVerticalOffset}px`;
+                titleEl.style.textShadow = settings.enableFontBorder ? `2px 2px 0px ${settings.borderColor}` : 'none';
+
+                usernameEl.style.fontSize = `${settings.usernameSize}px`;
+                usernameEl.style.color = settings.usernameColor;
+                usernameEl.style.top = `${settings.usernameVerticalOffset}px`;
+                usernameEl.style.textShadow = settings.enableFontBorder ? `2px 2px 0px ${settings.borderColor}` : 'none';
+
+                valueEl.style.fontSize = `${settings.fontSize}px`;
+                valueEl.style.color = settings.counterColor;
+                valueEl.style.top = `${settings.counterVerticalOffset}px`;
+                valueEl.style.textShadow = settings.enableFontBorder ? `2px 2px 0px ${settings.borderColor}` : 'none';
+
+                const fontTargets = document.querySelectorAll('.title, .username, .gift-value');
+                fontTargets.forEach(el => {
+                    el.style.fontFamily = settings.fontFamily;
+                    el.style.letterSpacing = `${settings.fontLetterSpacing}px`;
+                    el.style.lineHeight = `${settings.fontLineSpacing}`;
+                });
+
+                const opacity = settings.giftImageVisible ? settings.giftImageOpacity / 100 : 0;
+                imageEl.style.opacity = opacity;
+                imageEl.style.top = `${settings.giftVerticalOffset}px`;
+
+                updateOverlay();
+            }
+
+            async function loadInitialSettings() {
+                if (useLocal) {
+                    try {
+                        const response = await fetch(`${apiBase}/api/topgift-settings`);
+                        const data = await response.json();
+                        if (data?.settings) {
+                            applySettings(data.settings);
+                            return;
+                        }
+                    } catch (error) {
+                        console.warn('[TopGift] Failed to fetch settings from local API:', error);
+                    }
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                const fallback = {
+                    title: params.get('title') || settings.title,
+                    titleSize: Number(params.get('titleSize') || settings.titleSize),
+                    usernameSize: Number(params.get('usernameSize') || settings.usernameSize),
+                    fontSize: Number(params.get('fontSize') || settings.fontSize),
+                    titleColor: params.get('titleColor') || settings.titleColor,
+                    usernameColor: params.get('usernameColor') || settings.usernameColor,
+                    counterColor: params.get('counterColor') || settings.counterColor,
+                    fontFamily: params.get('fontFamily') || settings.fontFamily,
+                    giftImageOpacity: Number(params.get('giftImageOpacity') || settings.giftImageOpacity)
+                };
+                applySettings(fallback);
+            }
+
+            function updateOverlay() {
+                const overlay = document.getElementById('giftOverlay');
+                const statusEl = document.getElementById('connectionStatus');
+                const imageEl = document.getElementById('giftImage');
+                const usernameEl = document.getElementById('username');
+                const valueEl = document.getElementById('giftValue');
+
+                const imageSource = topGift.giftImage || defaultGiftImage;
+                if (settings.giftImageVisible) {
+                    imageEl.style.backgroundImage = `url(${imageSource})`;
+                } else {
+                    imageEl.style.backgroundImage = 'none';
+                }
+
+                usernameEl.textContent = topGift.username;
+                valueEl.textContent = `${topGift.giftValue.toLocaleString()} coins`;
+
+                overlay.style.display = 'block';
+                statusEl.style.display = isConnected ? 'none' : 'block';
+            }
+
+            function updateConnectionStatus(message) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.textContent = message;
+                statusEl.style.display = 'block';
+                document.getElementById('giftOverlay').style.display = 'none';
+            }
+
+            function connectWebSocket() {
+                const ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log('[TopGift] Connected to overlay WebSocket');
+                    isConnected = true;
+                    updateOverlay();
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                if ((data.type === 'gift' || data.type === 'topgift-update') && data.giftData) {
+                    const gift = data.giftData;
+                            const giftData = {
+                                username: gift.nickname || gift.username || 'Anonymous',
+                                giftName: gift.giftName || 'Gift',
+                                giftValue: gift.diamondCount || gift.giftValue || 0,
+                                giftImage: gift.giftPictureUrl || gift.giftImage || ''
+                            };
+
+                            if (!topGift || giftData.giftValue >= topGift.giftValue) {
+                                topGift = giftData;
+                                updateOverlay();
+                            }
+                        } else if (data.type === 'topgift-settings-update' && data.settings) {
+                            applySettings(data.settings);
+                        } else if (data.type === 'topgift-reset') {
+                            topGift = { username: 'Viewer', giftName: 'Gift', giftValue: 0, giftImage: '' };
+                            updateOverlay();
+                        }
+                    } catch (error) {
+                        console.error('[TopGift] Error parsing message:', error);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('[TopGift] WebSocket disconnected');
+                    isConnected = false;
+                    updateConnectionStatus('Disconnected from stream');
+                    if (useLocal) {
+                        setTimeout(connectWebSocket, RECONNECT_DELAY);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('[TopGift] WebSocket error:', error);
+                    ws.close();
+                };
+            }
+
+            loadInitialSettings().finally(() => {
+                updateOverlay();
+                connectWebSocket();
+            });
+        })();
+    </script>
+</body>
+</html>
+
+
+            // Apply settings to elements
+            document.getElementById('title').textContent = title;
+            document.getElementById('title').style.fontSize = titleSize + 'px';
+            document.getElementById('username').style.fontSize = usernameSize + 'px';
+            document.getElementById('giftValue').style.fontSize = fontSize + 'px';
+            document.getElementById('title').style.color = titleColor;
+            document.getElementById('username').style.color = usernameColor;
+            document.getElementById('giftValue').style.color = counterColor;
+            
+            // Apply font family to all text elements
+            const textElements = document.querySelectorAll('.title, .username, .gift-value');
+            textElements.forEach(el => {
+                el.style.fontFamily = fontFamily;
+            });
+
+            // Apply gift image opacity
+            document.getElementById('giftImage').style.opacity = giftImageOpacity / 100;
+        }
+
+        // Load settings when page loads
+        loadSettings();
+    </script>
+</body>
+</html>

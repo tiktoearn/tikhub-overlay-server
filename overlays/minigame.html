@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minigame Rectangle Overlay</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --rectangle-width: 160px;
+      --rectangle-height: 64px;
+      --effect-size: 112px;
+      --trigger-size: 72px;
+      --item-margin: 13px;
+      --columns: 9;
+      --show-count: 1;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent; /* default, overridden by config */
+      overflow: hidden; /* no scrollbars in OBS */
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    /* Wrapper should shrink-wrap the grid; add a little inner padding for nicer edges */
+    .triggers-grid-outer {
+      display: inline-block;
+      background: transparent;
+      padding: 6px 8px;
+      margin: 0;
+      overflow: visible;
+      border-radius: 8px;
+    }
+
+    .triggers-grid {
+      display: grid;
+      gap: var(--item-margin);
+      grid-template-columns: repeat(var(--columns), var(--rectangle-width));
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+
+    .trigger-box {
+      background-color: #1B1B1D;
+      border-radius: 10px;
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      box-sizing: border-box;
+      width: var(--rectangle-width);
+      height: var(--rectangle-height);
+      flex-shrink: 0;
+      overflow: visible;
+    }
+
+    .effect-container {
+      width: var(--effect-size);
+      height: var(--effect-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      margin-right: 8px;
+    }
+
+    .effect-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      max-width: none;
+      max-height: none;
+      display: block;
+    }
+
+    .trigger-container {
+      width: var(--trigger-size);
+      height: var(--trigger-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      position: relative;
+    }
+
+    .trigger-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+    }
+
+    .count-label {
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      z-index: 10;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .heart-count {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      font-weight: bold;
+      color: #ffffff;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="triggers-grid-outer" id="triggersGridOuter">
+    <div class="triggers-grid" id="triggersGrid"></div>
+  </div>
+
+  <script>
+    // Per-type overlay icon assets (mirror React MinigameOverlay icons)
+    const heartIconUrl = '/assets/overlay-icons/heart.png';
+    const followIconUrl = '/assets/overlay-icons/follow.png';
+    const shareIconUrl = '/assets/overlay-icons/share.png';
+    const subscriptionIconUrl = '/assets/overlay-icons/subscription1.png';
+    const chatIconUrl = '/assets/overlay-icons/chat.png';
+    const giftIconUrl = '/assets/overlay-icons/gift.png';
+    const coinIconUrl = '/assets/overlay-icons/coin.png';
+
+    function applyConfigToCss(config) {
+      const root = document.documentElement.style;
+      if (!config) return;
+
+      const effectSize =
+        config.rectangleEffectImageSize ?? config.effectImageSize ?? 112;
+      const triggerSize =
+        config.rectangleTriggerImageSize ?? config.triggerImageSize ?? 64;
+      const rectWidth = config.rectangleWidth ?? 160;
+      const rectHeight = config.rectangleHeight ?? 48;
+
+      // Width is direct from config
+      root.setProperty('--rectangle-width', rectWidth + 'px');
+
+      // Match app logic for height: max(rectangleHeight, max(effectSize, triggerSize) + 8)
+      const computedHeight = Math.max(rectHeight, Math.max(effectSize, triggerSize) + 8);
+      root.setProperty('--rectangle-height', computedHeight + 'px');
+
+      root.setProperty('--effect-size', effectSize + 'px');
+      root.setProperty('--trigger-size', triggerSize + 'px');
+      if (config.itemMargin != null) root.setProperty('--item-margin', config.itemMargin + 'px');
+      if (config.rectangleItemsPerRow) root.setProperty('--columns', config.rectangleItemsPerRow);
+      if (config.countSize) root.setProperty('--count-size', config.countSize + 'px');
+      if (config.showRectangleCount === false) root.setProperty('--show-count', '0'); else root.setProperty('--show-count', '1');
+
+      // Match app/export behavior: solid dark background only under the rectangles,
+      // not the whole page. Body stays transparent for OBS; we tint the wrapper.
+      const outer = document.getElementById('triggersGridOuter');
+      if (outer) {
+        if (config.rectangleTransparentBackground) {
+          outer.style.backgroundColor = 'transparent';
+        } else {
+          outer.style.backgroundColor = '#23262f';
+        }
+      }
+    }
+
+    function createTriggerBox(trigger, config) {
+      const box = document.createElement('div');
+      box.className = 'trigger-box';
+
+      const hasEffects = Array.isArray(trigger.effects) && trigger.effects.length > 0;
+      const firstEffect = hasEffects ? trigger.effects[0] : null;
+
+      // Effect count label (top-left) respects the toggle
+      if (config.showRectangleCount && hasEffects && firstEffect.count > 1) {
+        const count = document.createElement('div');
+        count.className = 'count-label';
+        const size = Math.max((config.countSize || 12) - 2, 8);
+        count.style.fontSize = size + 'px';
+        count.textContent = 'x' + firstEffect.count;
+        box.appendChild(count);
+      }
+
+      if (firstEffect) {
+        const effectDiv = document.createElement('div');
+        effectDiv.className = 'effect-container';
+        const img = document.createElement('img');
+        img.src = firstEffect.icon || firstEffect.image || '';
+        img.alt = firstEffect.name || '';
+        effectDiv.appendChild(img);
+        box.appendChild(effectDiv);
+      }
+
+      const trigDiv = document.createElement('div');
+      trigDiv.className = 'trigger-container';
+
+      const t = trigger.trigger || {};
+      const type = t.type;
+
+      // Likes use dedicated heart icon
+      if (type === 'like' || type === 'like_by_person') {
+        const img = document.createElement('img');
+        img.src = heartIconUrl;
+        img.alt = 'like';
+        trigDiv.appendChild(img);
+
+        // Like count on the heart is always shown, independent of the rectangle count toggle
+        if (true) {
+          const heartCount = document.createElement('div');
+          heartCount.className = 'heart-count';
+          heartCount.style.fontSize = (config.countSize || 12) + 'px';
+          heartCount.textContent = t.value || 1;
+          trigDiv.appendChild(heartCount);
+        }
+
+      // Follows use follow icon (like in React fallback)
+      } else if (type === 'follow') {
+        const img = document.createElement('img');
+        img.src = followIconUrl;
+        img.alt = 'follow';
+        trigDiv.appendChild(img);
+
+      // Likes / shares special icons or provided image
+      } else if (type === 'share') {
+        const img = document.createElement('img');
+        img.src = t.image || t.icon || shareIconUrl;
+        img.alt = 'share';
+        trigDiv.appendChild(img);
+
+      // If trigger.image or trigger.icon exists (e.g. gifts with their own PNG), always use that
+      } else if (t.image || t.icon) {
+        const img = document.createElement('img');
+        img.src = t.icon || t.image;
+        img.alt = t.name || type || '';
+        trigDiv.appendChild(img);
+
+      // Fallbacks for text-only triggers, mirror React:
+      } else if (type === 'subscribe') {
+        const img = document.createElement('img');
+        img.src = subscriptionIconUrl;
+        img.alt = 'subscribe';
+        trigDiv.appendChild(img);
+
+      } else if (type === 'chat') {
+        const img = document.createElement('img');
+        img.src = chatIconUrl;
+        img.alt = 'chat';
+        trigDiv.appendChild(img);
+
+      } else if (type === 'gift_min') {
+        const img = document.createElement('img');
+        img.src = coinIconUrl;
+        img.alt = 'gift_min';
+        trigDiv.appendChild(img);
+
+      } else if (type === 'gift_specific' || type === 'gift') {
+        const img = document.createElement('img');
+        img.src = giftIconUrl;
+        img.alt = 'gift';
+        trigDiv.appendChild(img);
+      }
+
+      box.appendChild(trigDiv);
+      return box;
+    }
+
+    function renderState(state) {
+      const grid = document.getElementById('triggersGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      if (!state || !Array.isArray(state.triggers)) return;
+
+      const config = state.config || {};
+      applyConfigToCss(config);
+
+      // In the React UI, all triggers are shown in rectangle layout,
+      // even if they don’t have effects. Mirror that behavior here.
+      state.triggers.forEach(tr => {
+        const box = createTriggerBox(tr, config);
+        grid.appendChild(box);
+      });
+    }
+
+    async function loadInitialState() {
+      try {
+        const res = await fetch('/state/minigameRect');
+        const json = await res.json();
+        if (json && json.success) {
+          renderState(json.state || { triggers: [], config: null });
+        }
+      } catch (e) {
+        console.error('Failed to load initial minigameRect state', e);
+      }
+    }
+
+    function connectWebSocket() {
+      const wsUrl = (location.origin.replace(/^http/, 'ws')) + '/ws/minigame-rect';
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('[MinigameRect] WebSocket connected');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'minigame-rect-update' || data.type === 'initial-state') {
+            const state = data.state || { triggers: data.triggers, config: data.config };
+            renderState(state);
+          }
+        } catch (e) {
+          console.error('Failed to parse WebSocket message', e);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('[MinigameRect] WebSocket closed, retrying in 5s');
+        setTimeout(connectWebSocket, 5000);
+      };
+
+      ws.onerror = (err) => {
+        console.error('[MinigameRect] WebSocket error', err);
+      };
+    }
+
+    loadInitialState();
+    connectWebSocket();
+  </script>
+</body>
+</html>

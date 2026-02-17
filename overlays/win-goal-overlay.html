@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Win Goal Overlay</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+    #win-goal {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #0004;
+      margin-top: 0;
+      font-family: Arial, sans-serif;
+      font-size: 48px;
+      color: #fff;
+      padding: 18px 36px;
+      background: #23262f;
+      border: none;
+      transition: all 0.2s;
+    }
+    #win-goal .icon {
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 8px #ffe06688);
+      display: block;
+      transform-origin: center center;
+      animation: slowPop 3s ease-in-out infinite;
+    }
+    @keyframes slowPop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+    #win-goal .label {
+      font-weight: bold;
+      font-size: 48px;
+      letter-spacing: 2px;
+      margin-right: 8px;
+    }
+    #win-goal .counter {
+      font-weight: 900;
+      font-size: 54px;
+      background: #2a2a2d;
+      border-radius: 8px;
+      padding: 0 18px;
+      margin: 0 8px;
+      display: flex;
+      align-items: center;
+    }
+    #win-goal .slash {
+      font-size: 44px;
+      margin: 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="win-goal">
+    <img class="icon" src="/assets/overlay-icons/win game.png" alt="Win" />
+    <span class="label">Win</span>
+    <span class="counter"><span id="win-count">0</span> <span class="slash">/</span> <span id="win-goal-num">5</span></span>
+  </div>
+  <script>
+    let ws = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 20;
+    let reconnectTimeout = null;
+
+    function updateWinGoalDisplay(data) {
+      // Update the overlay with the data
+      document.getElementById('win-count').textContent = String(data.current ?? '0');
+      document.getElementById('win-goal-num').textContent = String(data.total ?? '5');
+      
+      // Apply any custom styles
+      const el = document.getElementById('win-goal');
+      if (data.style) {
+        el.style.background = data.style.backgroundColor || '#23262f';
+        el.style.fontFamily = data.style.font || 'Arial, sans-serif';
+        el.style.fontSize = data.style.fontSize ? data.style.fontSize + 'px' : '48px';
+        el.style.color = data.style.winTextColor || '#fff';
+        el.style.border = data.style.enableFontBorder ? `2px solid ${data.style.borderColor || '#000'}` : 'none';
+        // If later we support selecting different PNGs, update the image src here
+        el.querySelector('.label').textContent = data.style.winGameText || 'Win';
+        el.querySelector('.counter').style.background = data.style.counterBackgroundColor || '#2a2a2d';
+        el.querySelector('.counter').style.color = data.style.counterColor || '#fff';
+        el.querySelector('.slash').style.color = data.style.winTextColor || '#fff';
+      }
+    }
+
+    async function fetchInitialData() {
+      try {
+        const res = await fetch('/api/update-wingoal', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        updateWinGoalDisplay(data);
+      } catch (error) {
+        console.error('[Win Goal] Error fetching initial data:', error);
+      }
+    }
+
+    function connectWebSocket() {
+      // Close existing connection if any
+      if (ws && ws.readyState !== WebSocket.CLOSED) {
+        ws.close();
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/win-goal`;
+      
+      try {
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          console.log('[Win Goal] WebSocket connected');
+          reconnectAttempts = 0;
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'win-goal-update') {
+              updateWinGoalDisplay(data);
+            }
+          } catch (error) {
+            console.error('[Win Goal] Error parsing WebSocket message:', error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error('[Win Goal] WebSocket error:', error);
+        };
+
+        ws.onclose = () => {
+          console.log('[Win Goal] ▲ Disconnected, reconnecting in 3s...');
+          if (reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            reconnectTimeout = setTimeout(connectWebSocket, 3000);
+          } else {
+            console.error('[Win Goal] Max reconnection attempts reached, falling back to polling');
+            // Fallback to polling if WebSocket fails
+            setInterval(fetchInitialData, 2000);
+          }
+        };
+      } catch (error) {
+        console.error('[Win Goal] Failed to create WebSocket connection:', error);
+        // Fallback to polling
+        setTimeout(() => {
+          fetchInitialData();
+          setInterval(fetchInitialData, 2000);
+        }, 1000);
+      }
+    }
+
+    // Fetch initial data and connect WebSocket
+    fetchInitialData();
+    connectWebSocket();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (ws) {
+        ws.close();
+      }
+    });
+  </script>
+</body>
+</html>

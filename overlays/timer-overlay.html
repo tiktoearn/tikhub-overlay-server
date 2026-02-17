@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            overflow: hidden;
+            user-select: none;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+        
+        .timer-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 16px;
+            background: rgba(24, 26, 32, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .timer-display {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #00fff0;
+            text-shadow: 0 0 20px rgba(0, 255, 240, 0.5);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-align: center;
+            line-height: 1;
+        }
+        
+        .timer-running {
+            animation: pulse 2s infinite;
+        }
+        
+        .timer-paused {
+            opacity: 0.7;
+        }
+        
+        .timer-complete {
+            background: linear-gradient(135deg, #00b894, #00a085);
+            animation: celebrate 0.5s ease-out;
+        }
+        
+        .timer-complete .timer-display {
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+        
+        @keyframes celebrate {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+
+        
+        /* Customization classes */
+        .custom-font-size { font-size: var(--font-size, 4rem) !important; }
+        .custom-font-color { color: var(--font-color, #00fff0) !important; }
+        .custom-bg-color { background: var(--bg-color, rgba(24, 26, 32, 0.95)) !important; }
+        .custom-border-radius { border-radius: var(--border-radius, 16px) !important; }
+        .custom-inner-bg-transparent { background: transparent !important; }
+        .custom-outer-bg-transparent { background: transparent !important; }
+    </style>
+</head>
+<body>
+    <div class="timer-container" id="timerContainer">
+        <div class="timer-display" id="timerDisplay">00:00</div>
+    </div>
+
+    <script>
+        // Timer state
+        let timerState = {
+            isRunning: false,
+            isPaused: false,
+            currentTime: 0,
+            targetTime: 0,
+            startTime: 0,
+            pauseTime: 0,
+            interval: null
+        };
+        
+        // Settings
+        let settings = {
+            fontSize: 48,
+            fontColor: '#00fff0',
+            bgColor: '#181a20',
+            borderRadius: 24,
+            innerBgTransparent: false,
+            outerBgTransparent: false
+        };
+        
+        // WebSocket connection
+        let ws = null;
+        
+        // Initialize timer
+        function initTimer() {
+            updateDisplay();
+            connectWebSocket();
+            loadSettings();
+        }
+        
+        // Connect to WebSocket
+        const OVERLAY_SERVER_URL = 'wss://tikhub-overlay-server.onrender.com';
+        function connectWebSocket() {
+            ws = new WebSocket(OVERLAY_SERVER_URL + '/ws/timer');
+            
+            ws.onopen = () => {
+                console.log('[Timer] WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleMessage(data);
+                } catch (error) {
+                    console.error('[Timer] Error parsing message:', error);
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('[Timer] WebSocket disconnected, reconnecting...');
+                setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('[Timer] WebSocket error:', error);
+            };
+        }
+        
+        // Handle incoming messages
+        function handleMessage(data) {
+            console.log('[Timer] Received message:', data);
+            
+            switch (data.type) {
+                case 'timer-control':
+                    handleTimerControl(data.action, data.time);
+                    break;
+                case 'timer-settings':
+                    updateSettings(data.settings);
+                    break;
+                case 'timer-update':
+                    updateTimer(data.currentTime, data.targetTime);
+                    break;
+                case 'timer-update':
+                    if (data.currentTime !== undefined && data.targetTime !== undefined) {
+                        updateTimer(data.currentTime, data.targetTime);
+                    }
+                    break;
+            }
+        }
+        
+        // Update timer from external source
+        function updateTimer(currentTime, targetTime) {
+            if (currentTime !== undefined) {
+                timerState.currentTime = currentTime;
+            }
+            if (targetTime !== undefined) {
+                timerState.targetTime = targetTime;
+            }
+            updateDisplay();
+        }
+        
+        // Handle timer control commands
+        function handleTimerControl(action, time) {
+            console.log('[Timer] Timer control:', action, time);
+            
+            switch (action) {
+                case 'start':
+                    startTimer(time || 0);
+                    break;
+                case 'stop':
+                    stopTimer();
+                    break;
+                case 'pause':
+                    pauseTimer();
+                    break;
+                case 'resume':
+                    resumeTimer();
+                    break;
+                case 'reset':
+                    resetTimer();
+                    break;
+                case 'add':
+                    addTime(time || 0);
+                    break;
+                case 'set':
+                    setTimer(time || 0);
+                    break;
+            }
+        }
+        
+        // Start timer
+        function startTimer(duration) {
+            if (timerState.isRunning) return;
+            
+            timerState.targetTime = duration;
+            timerState.currentTime = duration;
+            timerState.startTime = Date.now();
+            timerState.isRunning = true;
+            timerState.isPaused = false;
+            
+            startInterval();
+            updateDisplay();
+        }
+        
+        // Stop timer
+        function stopTimer() {
+            timerState.isRunning = false;
+            timerState.isPaused = false;
+            timerState.currentTime = 0;
+            timerState.targetTime = 0;
+            
+            clearInterval(timerState.interval);
+            timerState.interval = null;
+            
+            updateDisplay();
+        }
+        
+        // Pause timer
+        function pauseTimer() {
+            if (!timerState.isRunning || timerState.isPaused) return;
+            
+            timerState.isPaused = true;
+            timerState.pauseTime = Date.now();
+            
+            clearInterval(timerState.interval);
+            timerState.interval = null;
+            
+            updateDisplay();
+        }
+        
+        // Resume timer
+        function resumeTimer() {
+            if (!timerState.isRunning || !timerState.isPaused) return;
+            
+            const pauseDuration = Date.now() - timerState.pauseTime;
+            timerState.startTime += pauseDuration;
+            timerState.isPaused = false;
+            
+            startInterval();
+            updateDisplay();
+        }
+        
+        // Reset timer
+        function resetTimer() {
+            stopTimer();
+            timerState.currentTime = timerState.targetTime;
+            updateDisplay();
+        }
+        
+        // Add time
+        function addTime(seconds) {
+            if (timerState.isRunning) {
+                timerState.currentTime += seconds;
+                timerState.targetTime += seconds;
+            } else {
+                timerState.currentTime += seconds;
+                timerState.targetTime += seconds;
+            }
+            
+            updateDisplay();
+        }
+        
+        // Set timer
+        function setTimer(seconds) {
+            timerState.currentTime = seconds;
+            timerState.targetTime = seconds;
+            updateDisplay();
+        }
+        
+        // Start countdown interval
+        function startInterval() {
+            if (timerState.interval) return;
+            
+            timerState.interval = setInterval(() => {
+                if (timerState.isRunning && !timerState.isPaused) {
+                    timerState.currentTime = Math.max(0, timerState.targetTime - Math.floor((Date.now() - timerState.startTime) / 1000));
+                    
+                    if (timerState.currentTime <= 0) {
+                        timerComplete();
+                    } else {
+                        updateDisplay();
+                    }
+                }
+            }, 100);
+        }
+        
+        // Timer complete
+        function timerComplete() {
+            stopTimer();
+            
+            const container = document.getElementById('timerContainer');
+            container.classList.add('timer-complete');
+            
+            // Play completion sound or effect
+            playCompletionEffect();
+            
+            // Reset after celebration
+            setTimeout(() => {
+                container.classList.remove('timer-complete');
+            }, 3000);
+        }
+        
+        // Play completion effect
+        function playCompletionEffect() {
+            // Add any completion effects here (sound, animation, etc.)
+            console.log('[Timer] Timer completed!');
+        }
+        
+        // Update timer display
+        function updateDisplay() {
+            const display = document.getElementById('timerDisplay');
+            
+            if (display) {
+                display.textContent = formatTime(timerState.currentTime);
+            }
+            
+            // Update container classes based on state
+            updateContainerClasses();
+        }
+        
+        // Update container classes
+        function updateContainerClasses() {
+            const container = document.getElementById('timerContainer');
+            if (!container) return;
+            
+            // Remove all state classes
+            container.classList.remove('timer-running', 'timer-paused', 'timer-complete');
+            
+            // Add appropriate state class
+            if (timerState.isRunning && !timerState.isPaused) {
+                container.classList.add('timer-running');
+            } else if (timerState.isPaused) {
+                container.classList.add('timer-paused');
+            }
+        }
+        
+        // Format time
+        function formatTime(seconds) {
+            if (seconds < 0) seconds = 0;
+            
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Load settings
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('timerSettings');
+                if (saved) {
+                    const savedSettings = JSON.parse(saved);
+                    settings = { ...settings, ...savedSettings };
+                    applySettings();
+                }
+            } catch (error) {
+                console.error('[Timer] Error loading settings:', error);
+            }
+        }
+        
+        // Update settings
+        function updateSettings(newSettings) {
+            settings = { ...settings, ...newSettings };
+            localStorage.setItem('timerSettings', JSON.stringify(settings));
+            applySettings();
+        }
+        
+        // Apply settings
+        function applySettings() {
+            const container = document.getElementById('timerContainer');
+            const display = document.getElementById('timerDisplay');
+            
+            if (container) {
+                // Apply font size
+                if (settings.fontSize) {
+                    display.style.fontSize = settings.fontSize + 'px';
+                }
+                
+                // Apply font color
+                if (settings.fontColor) {
+                    display.style.color = settings.fontColor;
+                }
+                
+                // Apply background color
+                if (settings.bgColor) {
+                    if (settings.outerBgTransparent) {
+                        container.style.background = 'transparent';
+                    } else {
+                        container.style.background = settings.bgColor;
+                    }
+                }
+                
+                // Apply border radius
+                if (settings.borderRadius) {
+                    container.style.borderRadius = settings.borderRadius + 'px';
+                }
+            }
+        }
+        
+        // Handle parent window messages
+        window.addEventListener('message', (event) => {
+            if (event.data && typeof event.data === 'object') {
+                handleMessage(event.data);
+            }
+        });
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initTimer);
+        
+        // Fallback initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTimer);
+        } else {
+            initTimer();
+        }
+    </script>
+</body>
+</html>

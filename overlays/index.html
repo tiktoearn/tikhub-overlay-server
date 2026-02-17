@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikHub Overlays - Render.com</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .status {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status.connected {
+            background: rgba(76, 175, 80, 0.3);
+        }
+
+        .overlays-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .overlay-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .overlay-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .overlay-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .overlay-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .overlay-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+        }
+
+        .btn-copy:hover {
+            background: #fff;
+            transform: scale(1.05);
+        }
+
+        .btn-open {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+        }
+
+        .btn-open:hover {
+            background: rgba(76, 175, 80, 1);
+            transform: scale(1.05);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(76, 175, 80, 0.95);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 TikHub Overlays</h1>
+            <p class="subtitle">Cloud-Hosted Real-Time OBS Overlays</p>
+            <div class="status" id="status">Checking connection...</div>
+        </header>
+
+        <div class="overlays-grid" id="overlaysGrid"></div>
+
+        <footer>
+            <p>Powered by Render.com | TikHub v1.0</p>
+            <p style="margin-top: 10px; font-size: 0.85rem;">Add these URLs as Browser Sources in OBS Studio</p>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast">✅ URL copied to clipboard!</div>
+
+    <script>
+        const overlays = [
+            { name: 'Gift Bubbles', icon: '🎁', file: 'gift-bubbles-overlay.html', desc: 'Animated gift bubbles with streaks' },
+            { name: 'Chat Overlay', icon: '💬', file: 'chat-overlay.html', desc: 'Live chat messages display' },
+            { name: 'Gift Counter', icon: '🎁', file: 'gift-overlays.html', desc: 'Real-time gift counter' },
+            { name: 'Top Gift', icon: '🏆', file: 'topgift-overlay.html', desc: 'Show top gifter' },
+            { name: 'Top Streak', icon: '🔥', file: 'topstreak-overlay.html', desc: 'Display highest streak' },
+            { name: 'Lucky Wheel', icon: '🎡', file: 'luckywheel-overlay.html', desc: 'Interactive prize wheel' },
+            { name: 'Song Requests', icon: '🎵', file: 'songrequest-overlay.html', desc: 'Song request queue' },
+            { name: 'Gift vs Gift', icon: '🆚', file: 'giftvsgift-overlay.html', desc: 'Team battle overlay' },
+            { name: 'Win Goal', icon: '🏁', file: 'win-goal-overlay.html', desc: 'Track win progress' },
+            { name: 'Follow Goal', icon: '👥', file: 'follow-goal-overlay.html', desc: 'Follower goal tracker' },
+            { name: 'Like Goal', icon: '❤️', file: 'like-goal.html', desc: 'Like count goal' },
+            { name: 'Timer', icon: '⏱️', file: 'timer-overlay.html', desc: 'Countdown timer' }
+        ];
+
+        const baseUrl = window.location.origin;
+        const grid = document.getElementById('overlaysGrid');
+        const toast = document.getElementById('toast');
+
+        overlays.forEach(overlay => {
+            const card = document.createElement('div');
+            card.className = 'overlay-card';
+            card.innerHTML = `
+                <div class="overlay-icon">${overlay.icon}</div>
+                <div class="overlay-name">${overlay.name}</div>
+                <div class="overlay-desc">${overlay.desc}</div>
+                <div class="button-group">
+                    <button class="btn-copy" onclick="copyUrl('${overlay.file}')">📋 Copy URL</button>
+                    <button class="btn-open" onclick="openOverlay('${overlay.file}')">🔗 Open</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        function copyUrl(file) {
+            const url = `${baseUrl}/${file}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast(`✅ ${file} URL copied!`);
+            }).catch(() => {
+                showToast('❌ Failed to copy URL');
+            });
+        }
+
+        function openOverlay(file) {
+            window.open(`${baseUrl}/${file}`, '_blank');
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Check connection to WebSocket
+        async function checkConnection() {
+            const statusEl = document.getElementById('status');
+            try {
+                const response = await fetch(`${baseUrl}/ping`);
+                if (response.ok) {
+                    statusEl.textContent = '✅ Server Connected';
+                    statusEl.classList.add('connected');
+                } else {
+                    statusEl.textContent = '⚠️ Server Not Responding';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ Connection Failed';
+            }
+        }
+
+        checkConnection();
+        setInterval(checkConnection, 30000); // Check every 30 seconds
+    </script>
+</body>
+</html>
+

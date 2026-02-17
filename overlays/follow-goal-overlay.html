@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Follow Goal Overlay</title>
+  <meta name="viewport" content="width=900, initial-scale=1.0">
+  <style>
+    html, body {
+      width: 900px;
+      height: 120px;
+      margin: 0;
+      padding: 0;
+      background: transparent !important;
+      overflow: hidden;
+    }
+    .goal-container {
+      width: 900px;
+      height: 120px;
+      border-radius: 16px;
+      box-shadow: none;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      box-sizing: border-box;
+      position: relative;
+      background: none !important;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin-right: 32px;
+      display: inline-block;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .progress-bar-bg {
+      flex: 1;
+      height: 48px;
+      background: #2a6e8e;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #3a8dde, #7fff7f);
+      height: 100%;
+      border-radius: 12px 0 0 12px;
+      transition: width 0.5s cubic-bezier(.4,2,.3,1);
+      position: relative;
+      overflow: hidden;
+    }
+    .wave {
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      width: 200%;
+      height: 100%;
+      background: url('data:image/svg+xml;utf8,<svg width="200" height="48" viewBox="0 0 200 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 24 Q 25 0 50 24 T 100 24 T 150 24 T 200 24 V48 H0Z" fill="%23fff" fill-opacity="0.18"/></svg>');
+      background-size: 100px 48px;
+      animation: waveMove 2s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes waveMove {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100px); }
+    }
+    .progress-label {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: #fff;
+      font-size: 2.2rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 8px #000a;
+      z-index: 2;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="goal-container">
+    <div class="icon" style="background-image: url('./assets/overlay-icons/follow.png');"></div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill" style="width: 0%">
+        <div class="wave"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">Follow Goal - 0% Follows</div>
+    </div>
+  </div>
+  <script>
+    // Global variables
+    let GOAL = 100;
+    let currentFollows = 0;
+    let NAME = 'Follow Goal';
+    let animatingTest = false;
+    let ws = null;
+    let isActivated = false; // Default to deactivated
+
+    // Initialize WebSocket connection
+    function initWebSocket() {
+      try {
+        let wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+        ws = new WebSocket(wsProto + '://' + location.host + '/ws/follow-goal');
+        
+        ws.onopen = function() {
+          console.log('[Follow Goal] WebSocket connected');
+        };
+        
+        ws.onmessage = function(event) {
+          try {
+            const msg = JSON.parse(event.data);
+            handleMessage(msg);
+          } catch (e) {
+            console.error('[Follow Goal] Error parsing WebSocket message:', e);
+          }
+        };
+        
+        ws.onerror = function(error) {
+          console.error('[Follow Goal] WebSocket error:', error);
+        };
+        
+        ws.onclose = function() {
+          console.log('[Follow Goal] WebSocket disconnected, attempting to reconnect...');
+          setTimeout(initWebSocket, 3000);
+        };
+      } catch (e) {
+        console.error('[Follow Goal] WebSocket initialization error:', e);
+      }
+    }
+
+    // Handle incoming messages
+    function handleMessage(msg) {
+      console.log('[Follow Goal] Received message:', msg);
+      
+      // Only process messages meant for follow goal
+      if (msg.goalType && msg.goalType !== 'follow') {
+        console.log('[Follow Goal] Ignoring message for other goal type:', msg.goalType);
+        return; // Ignore messages for other goal types
+      }
+      
+      if (msg.type === 'test') {
+        console.log('[Follow Goal] Running test animation');
+        animateTest();
+      } else if (msg.type === 'cut') {
+        console.log('[Follow Goal] Cutting to 0');
+        setFollows(0);
+      } else if (msg.type === 'update-goal') {
+        console.log('[Follow Goal] Updating goal to:', msg.newGoal);
+        GOAL = msg.newGoal;
+        setFollows(currentFollows); // Refresh display with new goal
+      } else if (msg.type === 'reset-count') {
+        console.log('[Follow Goal] Resetting count to 0');
+        setFollows(0);
+      } else if (msg.type === 'update' && msg.payload) {
+        // Only update if the payload is for follow goal
+        if (!msg.payload.type || msg.payload.type === 'follow') {
+          console.log('[Follow Goal] Updating from payload:', msg.payload);
+          updateFromPayload(msg.payload);
+        } else {
+          console.log('[Follow Goal] Ignoring update for other goal type:', msg.payload.type);
+        }
+      }
+    }
+
+    // Update overlay from payload
+    function updateFromPayload(payload) {
+      console.log('[Follow Goal] Updating from payload:', payload);
+      
+      if (payload.goal !== undefined) {
+        GOAL = payload.goal;
+        console.log('[Follow Goal] Goal updated to:', GOAL);
+      }
+      if (payload.name !== undefined) {
+        NAME = payload.name;
+        console.log('[Follow Goal] Name updated to:', NAME);
+      }
+      if (payload.count !== undefined) {
+        console.log('[Follow Goal] Count updated to:', payload.count);
+        setFollows(payload.count);
+      }
+      if (payload.whenReached !== undefined) {
+        window.whenReached = payload.whenReached;
+        console.log('[Follow Goal] When reached updated to:', payload.whenReached);
+      }
+      if (payload.actionOnFinish !== undefined) {
+        window.actionOnFinish = payload.actionOnFinish;
+        console.log('[Follow Goal] Action on finish updated to:', payload.actionOnFinish);
+      }
+      if (payload.activate !== undefined) {
+        isActivated = payload.activate;
+        console.log('[Follow Goal] Activate setting updated to:', isActivated);
+        updateVisibility();
+      }
+        if (payload.barColor) document.getElementById('progressFill').style.background = payload.barColor;
+        if (payload.bgColor) document.querySelector('.progress-bar-bg').style.background = payload.bgColor;
+        if (payload.textColor) document.getElementById('progressLabel').style.color = payload.textColor;
+        if (payload.font) document.getElementById('progressLabel').style.fontFamily = payload.font;
+        if (payload.fontSize) document.getElementById('progressLabel').style.fontSize = payload.fontSize + 'px';
+        if (payload.fontSpacing !== undefined) document.getElementById('progressLabel').style.letterSpacing = payload.fontSpacing + 'px';
+      
+        if (payload.enableFontBorder) {
+          document.getElementById('progressLabel').style.textShadow = `0 0 4px ${payload.borderColor || '#000'}`;
+        } else {
+          document.getElementById('progressLabel').style.textShadow = 'none';
+        }
+      
+        if (payload.showTitle === false) {
+          document.getElementById('progressLabel').style.display = 'none';
+        } else {
+          document.getElementById('progressLabel').style.display = '';
+        }
+      
+      // Update the display immediately
+      setFollows(currentFollows);
+      updateVisibility();
+    }
+
+    // Update visibility based on activate setting
+    function updateVisibility() {
+      const container = document.querySelector('.goal-container');
+      if (isActivated) {
+        container.style.display = 'flex';
+        console.log('[Follow Goal] Overlay activated and visible');
+      } else {
+        container.style.display = 'none';
+        console.log('[Follow Goal] Overlay deactivated and hidden');
+      }
+    }
+
+    // Set follows count and update display
+    function setFollows(count) {
+      // Don't update if not activated
+      if (!isActivated) {
+        console.log('[Follow Goal] Overlay is deactivated, ignoring count update');
+        return;
+      }
+      
+      const previousFollows = currentFollows;
+      currentFollows = count;
+      const percent = Math.min(100, Math.round((currentFollows / GOAL) * 100));
+      document.getElementById('progressFill').style.width = percent + '%';
+      document.getElementById('progressLabel').textContent = `${NAME} - ${percent}% Follows`;
+      
+      // Check if goal was just reached
+      if (previousFollows < GOAL && currentFollows >= GOAL) {
+        console.log(`🎉 [Follow Goal] Goal reached! ${currentFollows}/${GOAL}`);
+        sendGoalCompletionEvent();
+      }
+    }
+    
+    // Send goal completion event
+    function sendGoalCompletionEvent() {
+      const event = {
+        type: 'goal-completed',
+        goalType: 'follow',
+        count: currentFollows,
+        goal: GOAL,
+        whenReached: window.whenReached || 'keep',
+        actionOnFinish: window.actionOnFinish || ''
+      };
+      
+      console.log('[Follow Goal] Sending goal completion event:', event);
+      
+      // Send via WebSocket if connected
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(event));
+      }
+      
+      // Also send via postMessage to parent
+      window.parent.postMessage(event, '*');
+    }
+
+    // Animate test sequence
+    function animateTest() {
+      if (animatingTest) return;
+      animatingTest = true;
+      let percent = 0;
+      const fill = document.getElementById('progressFill');
+      const label = document.getElementById('progressLabel');
+      
+      const step = () => {
+        if (percent <= 100) {
+          fill.style.width = percent + '%';
+          label.textContent = `${NAME} - ${percent}% Follows`;
+          percent += 2;
+          setTimeout(step, 15);
+        } else {
+          setTimeout(() => {
+            fill.style.width = '0%';
+            label.textContent = `${NAME} - 0% Follows`;
+            animatingTest = false;
+          }, 400);
+        }
+      };
+      step();
+    }
+
+    // Single event listener for parent messages
+    window.addEventListener('message', (event) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      handleMessage(event.data);
+    });
+
+    // Initialize WebSocket on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      initWebSocket();
+      console.log('[Follow Goal] Overlay loaded and initialized');
+    });
+
+    // Fallback initialization
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initWebSocket);
+    } else {
+      initWebSocket();
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
