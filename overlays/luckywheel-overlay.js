@@ -27745,7 +27745,17 @@ function memoizeOne(resultFn, isEqual) {
         "^(aria)[A-Z][:A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040]*$"
       ),
       isJavaScriptProtocol =
-        /^[\u0000-\u001F ]*j[\r\n\t]*a[\r\n\t]*v[\r\n\t]*a[\r\n\t]*s[\r\n\t]*c[\r\n\t]*r[\r\n\t]*i[\r\n\t]*p[\r\n\t]*t[\r\n\t]*:/i,
+        /^[\u0000-\u001F ]*j[\r
+\t]*a[\r
+\t]*v[\r
+\t]*a[\r
+\t]*s[\r
+\t]*c[\r
+\t]*r[\r
+\t]*i[\r
+\t]*p[\r
+\t]*t[\r
+\t]*:/i,
       currentReplayingEvent = null,
       restoreTarget = null,
       restoreQueue = null,
@@ -41447,8 +41457,8 @@ function LuckyWheelOverlayRealtime() {
     // Determine which instance this overlay is for based on URL
     const isWheel2 = typeof window !== 'undefined' && window.location.pathname.includes('luckywheel2-overlay');
     const instanceKey = isWheel2 ? 'luckywheel2' : 'luckywheel';
-    // Use remote overlay server (Render or Railway) or fallback to localhost for development
-    const OVERLAY_SERVER = typeof window !== 'undefined' && ['tikhub-overlay-server.onrender.com', 'tikhub-overlay-server-production.up.railway.app'].includes(window.location.hostname)
+    // Use remote overlay server (Render, Railway, or custom domain) or fallback to localhost for development
+    const OVERLAY_SERVER = typeof window !== 'undefined' && ['tikhub-overlay-server.onrender.com', 'tikhub-overlay-server-production.up.railway.app', 'overlay.tikhub.site'].includes(window.location.hostname)
         ? `${window.location.protocol}//${window.location.host}`
         : 'http://localhost:3002';
     const WS_PROTOCOL = OVERLAY_SERVER.startsWith('https') ? 'wss' : 'ws';
