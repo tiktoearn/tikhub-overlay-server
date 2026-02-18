@@ -1,4 +1,10 @@
-<!doctype html><html><head><meta charset="UTF-8"><title>Win Goal Overlay</title><style>html, body {
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Win Goal Overlay</title>
+  <style>
+    html, body {
       margin: 0;
       padding: 0;
       width: 100vw;
@@ -55,7 +61,17 @@
     #win-goal .slash {
       font-size: 44px;
       margin: 0 8px;
-    }</style></head><body><div id="win-goal"><img class="icon" src="/assets/overlay-icons/win game.png" alt="Win"/> <span class="label">Win</span> <span class="counter"><span id="win-count">0</span> <span class="slash">/</span> <span id="win-goal-num">5</span></span></div><script>let ws = null;
+    }
+  </style>
+</head>
+<body>
+  <div id="win-goal">
+    <img class="icon" src="/assets/overlay-icons/win game.png" alt="Win" />
+    <span class="label">Win</span>
+    <span class="counter"><span id="win-count">0</span> <span class="slash">/</span> <span id="win-goal-num">5</span></span>
+  </div>
+  <script>
+    let ws = null;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 20;
     let reconnectTimeout = null;
@@ -157,4 +173,7 @@
       if (ws) {
         ws.close();
       }
-    });</script></body></html>
+    });
+  </script>
+</body>
+</html>

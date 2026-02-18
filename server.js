@@ -438,6 +438,15 @@ app.post('/api/execute-action', (req, res) => {
 });
 
 // Song Requests
+app.get('/api/songrequests', (req, res) => {
+    res.json({
+        success: true,
+        requests: storage.state.songRequests,
+        currentTrack: storage.state.currentTrack,
+        spotifyQueue: storage.state.spotifyQueue
+    });
+});
+
 app.post('/overlay/songrequest/add', (req, res) => {
     const request = req.body;
     storage.state.songRequests.push(request);
@@ -504,6 +513,10 @@ app.post('/overlay/followgoal/update', (req, res) => {
 });
 
 // Win Goal
+app.get('/api/update-wingoal', (req, res) => {
+    res.json(storage.state.winGoal);
+});
+
 app.post('/overlay/wingoal/update', (req, res) => {
     storage.state.winGoal = req.body;
     broadcast('winGoal', { type: 'win-goal-update', ...req.body });
