@@ -28,9 +28,9 @@ const goalBehaviors = [
 ];
 const GiftVsGiftOverlay = ({ editor = false, actions = [], triggerAction, refreshTrigger }) => {
     const useLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const OVERLAY_SERVER = useLocal ? 'http://localhost:3002' : 'https://overlay.tiktoearn.site';
+    const OVERLAY_SERVER = useLocal ? 'http://localhost:3002' : `${typeof window !== 'undefined' ? window.location.protocol : 'https:'}//${typeof window !== 'undefined' ? window.location.host : 'tikhub-overlay-server-production.up.railway.app'}`;
     const WS_PROTOCOL = useLocal ? 'ws' : 'wss';
-    const WS_SERVER = useLocal ? '//localhost:3002' : '//overlay.tiktoearn.site';
+    const WS_SERVER = useLocal ? '//localhost:3002' : `//${typeof window !== 'undefined' ? window.location.host : 'tikhub-overlay-server-production.up.railway.app'}`;
     const [leftGift, setLeftGift] = (0, react_1.useState)(availableGifts_generated_1.availableGifts[0]);
     const [rightGift, setRightGift] = (0, react_1.useState)(availableGifts_generated_1.availableGifts[1]);
     const [leftPoints, setLeftPoints] = (0, react_1.useState)(0);

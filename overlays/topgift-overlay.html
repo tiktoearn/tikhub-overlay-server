@@ -112,9 +112,9 @@
             let isConnected = false;
 
             const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const apiBase = useLocal ? `${window.location.protocol}//${window.location.host}` : 'https://overlay.tiktoearn.site';
+            const apiBase = useLocal ? `${window.location.protocol}//${window.location.host}` : `${window.location.protocol}//${window.location.host}`;
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/topgift` : 'wss://overlay.tiktoearn.site/ws/topgift';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws/topgift`;
             const RECONNECT_DELAY = 4000;
 
             function applySettings(newSettings) {

@@ -28467,9 +28467,9 @@ const SongRequestOverlay = ({ isVisible, channelId = '325933', spotifyConnected 
     const [spotifyData, setSpotifyData] = (0, react_1.useState)({ currentTrack: null, queue: [] });
     const [isConnected, setIsConnected] = (0, react_1.useState)(false);
     const wsRef = (0, react_1.useRef)(null);
-    // Use Render overlay server or fallback to localhost for development
-    const OVERLAY_SERVER = typeof window !== 'undefined' && window.location.hostname === 'tikhub-overlay-server.onrender.com'
-        ? 'https://tikhub-overlay-server.onrender.com'
+    // Use remote overlay server (Render or Railway) or fallback to localhost for development
+    const OVERLAY_SERVER = typeof window !== 'undefined' && ['tikhub-overlay-server.onrender.com', 'tikhub-overlay-server-production.up.railway.app'].includes(window.location.hostname)
+        ? `${window.location.protocol}//${window.location.host}`
         : 'http://localhost:3002';
     const WS_PROTOCOL = OVERLAY_SERVER.startsWith('https') ? 'wss' : 'ws';
     const WS_SERVER = OVERLAY_SERVER.replace(/^https?:/, '');

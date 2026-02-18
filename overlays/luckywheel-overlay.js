@@ -38741,10 +38741,13 @@ module.exports = __webpack_require__.p + "274aa0db33b69eb283cd.png";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BOX_IMAGES = void 0;
-// Check if running on remote overlay domains (Render or TikToEarn CDN)
-const remoteOverlayHosts = ['tikhub-overlay-server.onrender.com', 'overlay.tiktoearn.site'];
+// Check if running on remote overlay domains (Render, TikToEarn CDN, or Railway)
+const remoteOverlayHosts = ['tikhub-overlay-server.onrender.com', 'overlay.tiktoearn.site', 'tikhub-overlay-server-production.up.railway.app'];
 const isRemoteOverlay = typeof window !== 'undefined' && remoteOverlayHosts.includes(window.location.hostname);
-const ASSET_BASE = isRemoteOverlay ? `${window.location.protocol}//${window.location.host}/assets/boxes` : '';
+// Also treat localhost as remote for asset loading to avoid webpack hashed filenames
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const useDirectPaths = isRemoteOverlay || isLocalhost;
+const ASSET_BASE = useDirectPaths ? `${window.location.protocol}//${window.location.host}/assets/boxes` : '';
 // Helper to encode URLs for Render (spaces → %20)
 const renderUrl = (filename) => `${ASSET_BASE}/${encodeURIComponent(filename)}`;
 // If on Render, use direct paths. Otherwise, use webpack imports.
@@ -38752,7 +38755,7 @@ let sand2, purpleCircle, sand, brown, cyanTriangle, greenLine2, blueCircle, pink
 let greenDot, greenWave, whiteWood2, nightStar, gray, blueDot, darkPurple, pinkLine, orangeRed2, green2;
 let cyan3, yellow2, whiteWood, darkGreen, red2, purple2, pinkDot, orangeRed, green3, blueGreen;
 let yellow3, black2, blue2, orange2, purple3, pinky, black, orange, red, pink, purple, blue, cyan, green, yellow;
-if (isRemoteOverlay) {
+if (useDirectPaths) {
     sand2 = renderUrl('sand 2.png');
     purpleCircle = renderUrl('purple circle.png');
     sand = renderUrl('sand.png');
@@ -38846,18 +38849,68 @@ else {
     green = __webpack_require__(/*! ./green.png */ "./src/assets/boxes/green.png");
     yellow = __webpack_require__(/*! ./yellow.png */ "./src/assets/boxes/yellow.png");
 }
-exports.BOX_IMAGES = {
-    'sand 2.png': sand2,
-    'purple circle.png': purpleCircle,
-    'sand.png': sand,
-    'brown.png': brown,
-    'cyan triangle.png': cyanTriangle,
-    'green line 2.png': greenLine2,
-    'blue circle.png': blueCircle,
-    'pink line 2.png': pinkLine2,
-    'red line.png': redLine,
-    'yellow sun.png': yellowSun,
-    'green dot.png': greenDot,
+// Override BOX_IMAGES for localhost to use direct paths
+if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    exports.BOX_IMAGES = {
+        'sand 2.png': 'http://localhost:3002/assets/boxes/sand%202.png',
+        'purple circle.png': 'http://localhost:3002/assets/boxes/purple%20circle.png',
+        'sand.png': 'http://localhost:3002/assets/boxes/sand.png',
+        'brown.png': 'http://localhost:3002/assets/boxes/brown.png',
+        'cyan triangle.png': 'http://localhost:3002/assets/boxes/cyan%20triangle.png',
+        'green line 2.png': 'http://localhost:3002/assets/boxes/green%20line%202.png',
+        'blue circle.png': 'http://localhost:3002/assets/boxes/blue%20circle.png',
+        'pink line 2.png': 'http://localhost:3002/assets/boxes/pink%20line%202.png',
+        'red line.png': 'http://localhost:3002/assets/boxes/red%20line.png',
+        'yellow sun.png': 'http://localhost:3002/assets/boxes/yellow%20sun.png',
+        'green dot.png': 'http://localhost:3002/assets/boxes/green%20dot.png',
+        'green wave.png': 'http://localhost:3002/assets/boxes/green%20wave.png',
+        'white wood 2.png': 'http://localhost:3002/assets/boxes/white%20wood%202.png',
+        'night star.png': 'http://localhost:3002/assets/boxes/night%20star.png',
+        'gray.png': 'http://localhost:3002/assets/boxes/gray.png',
+        'blue dot.png': 'http://localhost:3002/assets/boxes/blue%20dot.png',
+        'dark purple.png': 'http://localhost:3002/assets/boxes/dark%20purple.png',
+        'pink line.png': 'http://localhost:3002/assets/boxes/pink%20line.png',
+        'orange-red 2.png': 'http://localhost:3002/assets/boxes/orange-red%202.png',
+        'green 2.png': 'http://localhost:3002/assets/boxes/green%202.png',
+        'cyan 3.png': 'http://localhost:3002/assets/boxes/cyan%203.png',
+        'yellow 2.png': 'http://localhost:3002/assets/boxes/yellow%202.png',
+        'white wood.png': 'http://localhost:3002/assets/boxes/white%20wood.png',
+        'dark green.png': 'http://localhost:3002/assets/boxes/dark%20green.png',
+        'red 2.png': 'http://localhost:3002/assets/boxes/red%202.png',
+        'purple 2.png': 'http://localhost:3002/assets/boxes/purple%202.png',
+        'pink dot.png': 'http://localhost:3002/assets/boxes/pink%20dot.png',
+        'orange-red.png': 'http://localhost:3002/assets/boxes/orange-red.png',
+        'green 3.png': 'http://localhost:3002/assets/boxes/green%203.png',
+        'blue-green.png': 'http://localhost:3002/assets/boxes/blue-green.png',
+        'yellow 3.png': 'http://localhost:3002/assets/boxes/yellow%203.png',
+        'black 2.png': 'http://localhost:3002/assets/boxes/black%202.png',
+        'blue 2.png': 'http://localhost:3002/assets/boxes/blue%202.png',
+        'orange 2.png': 'http://localhost:3002/assets/boxes/orange%202.png',
+        'purple 3.png': 'http://localhost:3002/assets/boxes/purple%203.png',
+        'pinky.png': 'http://localhost:3002/assets/boxes/pinky.png',
+        'black.png': 'http://localhost:3002/assets/boxes/black.png',
+        'orange.png': 'http://localhost:3002/assets/boxes/orange.png',
+        'red.png': 'http://localhost:3002/assets/boxes/red.png',
+        'pink.png': 'http://localhost:3002/assets/boxes/pink.png',
+        'purple.png': 'http://localhost:3002/assets/boxes/purple.png',
+        'blue.png': 'http://localhost:3002/assets/boxes/blue.png',
+        'cyan.png': 'http://localhost:3002/assets/boxes/cyan.png',
+        'green.png': 'http://localhost:3002/assets/boxes/green.png',
+        'yellow.png': 'http://localhost:3002/assets/boxes/yellow.png'
+    };
+} else {
+    exports.BOX_IMAGES = {
+        'sand 2.png': sand2,
+        'purple circle.png': purpleCircle,
+        'sand.png': sand,
+        'brown.png': brown,
+        'cyan triangle.png': cyanTriangle,
+        'green line 2.png': greenLine2,
+        'blue circle.png': blueCircle,
+        'pink line 2.png': pinkLine2,
+        'red line.png': redLine,
+        'yellow sun.png': yellowSun,
+        'green dot.png': greenDot,
     'green wave.png': greenWave,
     'white wood 2.png': whiteWood2,
     'night star.png': nightStar,
@@ -39252,10 +39305,10 @@ const winning_mp3_1 = __importDefault(__webpack_require__(/*! ../assets/sounds/w
 const WheelConfigPanel_1 = __importStar(__webpack_require__(/*! ./WheelConfigPanel */ "./src/components/WheelConfigPanel.tsx"));
 const boxes_1 = __webpack_require__(/*! ../assets/boxes */ "./src/assets/boxes/index.ts");
 const overlayUtils_1 = __webpack_require__(/*! ../utils/overlayUtils */ "./src/utils/overlayUtils.ts");
-// Detect if running on Render overlay server
-const isRenderOverlay = typeof window !== 'undefined' && window.location.hostname === 'tikhub-overlay-server.onrender.com';
-const giftSound = isRenderOverlay ? 'https://tikhub-overlay-server.onrender.com/assets/sounds/gift.mp3' : gift_mp3_1.default;
-const winSound = isRenderOverlay ? 'https://tikhub-overlay-server.onrender.com/assets/sounds/winning.mp3' : winning_mp3_1.default;
+// Detect if running on remote overlay servers (Render or Railway)
+const isRemoteOverlayServer = typeof window !== 'undefined' && ['tikhub-overlay-server.onrender.com', 'tikhub-overlay-server-production.up.railway.app'].includes(window.location.hostname);
+const giftSound = isRemoteOverlayServer ? `${window.location.protocol}//${window.location.host}/assets/sounds/gift.mp3` : gift_mp3_1.default;
+const winSound = isRemoteOverlayServer ? `${window.location.protocol}//${window.location.host}/assets/sounds/winning.mp3` : winning_mp3_1.default;
 // --- Visual constants to match GIF ---
 const BOX_SIZE = 96;
 const BOX_GAP = 12;
@@ -41393,9 +41446,9 @@ function LuckyWheelOverlayRealtime() {
     // Determine which instance this overlay is for based on URL
     const isWheel2 = typeof window !== 'undefined' && window.location.pathname.includes('luckywheel2-overlay');
     const instanceKey = isWheel2 ? 'luckywheel2' : 'luckywheel';
-    // Use Render overlay server or fallback to localhost for development
-    const OVERLAY_SERVER = typeof window !== 'undefined' && window.location.hostname === 'tikhub-overlay-server.onrender.com'
-        ? 'https://tikhub-overlay-server.onrender.com'
+    // Use remote overlay server (Render or Railway) or fallback to localhost for development
+    const OVERLAY_SERVER = typeof window !== 'undefined' && ['tikhub-overlay-server.onrender.com', 'tikhub-overlay-server-production.up.railway.app'].includes(window.location.hostname)
+        ? `${window.location.protocol}//${window.location.host}`
         : 'http://localhost:3002';
     const WS_PROTOCOL = OVERLAY_SERVER.startsWith('https') ? 'wss' : 'ws';
     const WS_SERVER = OVERLAY_SERVER.replace(/^https?:/, '');

@@ -220,7 +220,9 @@
         let ws = null;
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 5;
-        const OVERLAY_SERVER_URL = 'wss://tikhub-overlay-server.onrender.com';
+        // Use dynamic WebSocket URL based on current host
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const OVERLAY_SERVER_URL = `${wsProtocol}//${window.location.host}`;
         
         function connectWebSocket() {
             try {

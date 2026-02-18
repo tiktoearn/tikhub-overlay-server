@@ -133,8 +133,9 @@
             loadSettings();
         }
         
-        // Connect to WebSocket
-        const OVERLAY_SERVER_URL = 'wss://tikhub-overlay-server.onrender.com';
+        // Use dynamic WebSocket URL based on current host
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const OVERLAY_SERVER_URL = `${wsProtocol}//${window.location.host}`;
         function connectWebSocket() {
             ws = new WebSocket(OVERLAY_SERVER_URL + '/ws/timer');
             
