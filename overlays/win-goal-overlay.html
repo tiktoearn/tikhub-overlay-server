@@ -78,11 +78,13 @@
 
     function updateWinGoalDisplay(data) {
       // Update the overlay with the data
-      document.getElementById('win-count').textContent = String(data.current ?? '0');
+      const current = data.current ?? 0;
+      document.getElementById('win-count').textContent = String(current);
       document.getElementById('win-goal-num').textContent = String(data.total ?? '5');
       
       // Apply any custom styles
       const el = document.getElementById('win-goal');
+      const counterEl = el.querySelector('.counter');
       if (data.style) {
         el.style.background = data.style.backgroundColor || '#23262f';
         el.style.fontFamily = data.style.font || 'Arial, sans-serif';
@@ -91,9 +93,22 @@
         el.style.border = data.style.enableFontBorder ? `2px solid ${data.style.borderColor || '#000'}` : 'none';
         // If later we support selecting different PNGs, update the image src here
         el.querySelector('.label').textContent = data.style.winGameText || 'Win';
-        el.querySelector('.counter').style.background = data.style.counterBackgroundColor || '#2a2a2d';
-        el.querySelector('.counter').style.color = data.style.counterColor || '#fff';
+        counterEl.style.background = data.style.counterBackgroundColor || '#2a2a2d';
         el.querySelector('.slash').style.color = data.style.winTextColor || '#fff';
+        
+        // Set counter color: red for negative, custom color for positive/zero
+        if (current < 0) {
+          counterEl.style.color = '#ff4444'; // Red for negative
+        } else {
+          counterEl.style.color = data.style.counterColor || '#fff';
+        }
+      } else {
+        // No custom style - use default: red for negative, white for positive/zero
+        if (current < 0) {
+          counterEl.style.color = '#ff4444'; // Red for negative
+        } else {
+          counterEl.style.color = '#fff';
+        }
       }
     }
 
