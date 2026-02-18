@@ -38946,6 +38946,7 @@ if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' |
     'green.png': green,
     'yellow.png': yellow,
 };
+}
 
 
 /***/ }),
