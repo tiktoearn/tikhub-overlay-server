@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Bubble Overlay</title>
-    <style>
-        body {
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Real Bubble Overlay</title><style>body {
             margin: 0;
             padding: 0;
             background: transparent;
@@ -263,14 +256,7 @@
         @keyframes rainbowShift {
             0%, 100% { filter: hue-rotate(0deg); }
             50% { filter: hue-rotate(180deg); }
-        }
-    </style>
-</head>
-<body>
-    <div class="bubble-container" id="bubbleContainer"></div>
-
-    <script>
-        class RealBubbleOverlay {
+        }</style></head><body><div class="bubble-container" id="bubbleContainer"></div><script>class RealBubbleOverlay {
             constructor() {
                 this.container = document.getElementById('bubbleContainer');
                 this.bubbleCount = 0;
@@ -439,7 +425,4 @@
                     overlay.simulateGift();
                 }, 4000);
             }
-        }, 3000);
-    </script>
-</body>
-</html>
+        }, 3000);</script></body></html>} }, 800); } simulateGift() { const gifts = [ { giftName: 'Rose', username: 'viewer1', coins: 50 }, { giftName: 'Diamond', username: 'bigspender', coins: 1000 }, { giftName: 'Heart', username: 'fan123', coins: 100 } ]; const randomGift = gifts[Math.floor(Math.random() * gifts.length)]; this.createBubble(randomGift); } } const overlay = new RealBubbleOverlay(); // Connect to WebSocket for real gift events (use same host/port as overlay server) const wsUrl = (location.origin.replace(/^http/, 'ws')) + '/ws/gift-bubbles'; const ws = new WebSocket(wsUrl); ws.onopen = () => { console.log('Gift Bubbles Overlay: Connected to WebSocket server'); }; ws.onmessage = (event) => { try { const data = JSON.parse(event.data); console.log('[Gift Bubbles] Received WebSocket data:', data); if (data.type === 'gift' || data.event === 'gift') { // Server wraps in giftData, check both levels const source = data.giftData || data; const giftData = { giftName: source.giftName || source.gift?.giftName || source.name || 'Gift', username: source.nickname || source.username || source.uniqueId || 'Viewer', coins: source.diamondCount || source.coins || source.gift?.diamondCount || 50, giftPictureUrl: source.giftPictureUrl || source.giftImage || source.gift?.image || source.image || '', giftImage: source.giftPictureUrl || source.giftImage || source.gift?.image || source.image || '' }; console.log('[Gift Bubbles] Parsed gift data:', giftData); overlay.createBubble(giftData); } } catch (error) { console.error('Error parsing WebSocket message:', error); } }; ws.onerror = (error) => { console.error('WebSocket error:', error); }; ws.onclose = () => { console.log('Gift Bubbles Overlay: WebSocket connection closed'); }; // Test mode (only if WebSocket fails) setTimeout(() => { if (ws.readyState !== WebSocket.OPEN) { console.log('WebSocket not connected, starting test mode'); setInterval(() => { overlay.simulateGift(); }, 4000); } }, 3000);
