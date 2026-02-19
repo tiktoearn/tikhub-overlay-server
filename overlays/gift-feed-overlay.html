@@ -16,92 +16,90 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            overflow-x: hidden;
-            background: rgba(0, 0, 0, 0.8);
+            background: transparent;
             margin: 0;
             padding: 10px;
         }
 
         #chatContainer {
             width: 100%;
-            height: calc(100vh - 25px);
+            height: calc(100vh - 20px);
             overflow-y: hidden;
-            overflow-wrap: break-word;
-            word-break: break-all;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
-        @keyframes chatMessageOpacityIntro {
+        @keyframes slideIn {
             0% {
                 opacity: 0;
+                transform: translateX(-100px);
             }
-
+            60% {
+                opacity: 1;
+                transform: translateX(10px);
+            }
             100% {
                 opacity: 1;
+                transform: translateX(0);
             }
         }
 
-        @keyframes chatMessageSlideIntro {
-            0% {
-                left: 100px;
-            }
-
-            100% {
-                left: 0px;
-            }
-        }
-
-        .chatMessage {
-            position: relative;
-            margin-top: 4px;
-            overflow-wrap: break-word;
-            word-break: break-all;
-            max-width: 100%;
-            width: 100%;
-            overflow: hidden;
-            padding-top: 3px;
-            padding-left: 4px;
-            padding-right: 10px;
+        .giftItem {
+            display: flex;
+            align-items: center;
+            background: rgba(80, 80, 80, 0.9);
             border-radius: 10px;
-        }
-
-        .comment {
-            overflow-wrap: break-word;
-            word-break: break-word;
-            max-width: 100%;
-            overflow: hidden;
-            margin-bottom: 5px;
-        }
-
-        .username {
-            font-weight: bold;
-            margin-bottom: 2px;
+            padding: 6px 12px;
+            animation: slideIn 0.3s ease-out;
+            min-height: 40px;
         }
 
         .profileImage {
-            margin-right: 5px;
-            border-radius: 15%;
-            height: 50px;
-            width: 50px;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            margin-right: 10px;
+            object-fit: cover;
         }
 
-        .giftImage {
-            height: 50px;
-            width: 50px;
+        .giftContent {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        td {
-            vertical-align: top;
+        .username {
+            color: #c084fc;
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 1px;
+        }
+
+        .giftText {
+            color: #ffffff;
+            font-size: 11px;
         }
 
         .giftRight {
-            position: absolute;
-            right: 20px;
-            margin-top: -4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 8px;
         }
 
         .repeatCount {
-            margin-right: 5px;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .giftImage {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
         }
 
         .fadeOut {
@@ -225,14 +223,20 @@
             gifts_backgroundColor: 'transparent'
         };
 
-        // Demo gift images from TikTok (real gift images)
+        // Demo gift images - using placeholder service for reliable images
         const giftImages = {
-            'Rose': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/6fb042c083b0381b1d49fe27e77d1d9e~tplv-obj.webp',
-            'TikTok': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/5c27d136380a218b7e384b520f4a0a8d~tplv-obj.webp',
-            'Heart': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8023e3e8a5e6e8b6b6e8f8e8e8e8e8e8~tplv-obj.webp',
-            'Lion': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/3e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e~tplv-obj.webp',
-            'Crown': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d~tplv-obj.webp',
-            'Galaxy': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d~tplv-obj.webp'
+            'Rose': 'https://placehold.co/50x50/ff6b9d/ffffff?text=🌹',
+            'TikTok': 'https://placehold.co/50x50/000000/ffffff?text=TT',
+            'Heart': 'https://placehold.co/50x50/ff4757/ffffff?text=❤️',
+            'Lion': 'https://placehold.co/50x50/ffa502/ffffff?text=🦁',
+            'Crown': 'https://placehold.co/50x50/ffd700/ffffff?text=👑',
+            'Galaxy': 'https://placehold.co/50x50/8e44ad/ffffff?text=🌌',
+            'Doughnut': 'https://placehold.co/50x50/ff9ff3/ffffff?text=🍩',
+            'Finger Heart': 'https://placehold.co/50x50/ff6b81/ffffff?text=🫰',
+            'GG': 'https://placehold.co/50x50/70a1ff/ffffff?text=GG',
+            'Ice Cream': 'https://placehold.co/50x50/fbc531/ffffff?text=🍦',
+            'Love': 'https://placehold.co/50x50/ff4757/ffffff?text=💕',
+            'Panda': 'https://placehold.co/50x50/535c68/ffffff?text=🐼'
         };
 
         // Default avatar (TikHub logo)
@@ -251,13 +255,13 @@
 
         function cloneTemplate() {
             chatContainer = $("#chatContainer");
-            template = $(".chatMessage").first().clone();
-            template.css("display", "block");
-            $(".chatMessage").remove();
+            template = $(".giftItem").first().clone();
+            template.css("display", "none");
+            $(".giftItem").remove();
         }
 
         function enforceMessageLimit() {
-            const messages = $(".chatMessage");
+            const messages = $(".giftItem");
             if (messages.length > 50) {
                 messages.slice(0, 25).remove();
             }
@@ -275,6 +279,7 @@
             enforceMessageLimit();
 
             let thisItem = template.clone();
+            thisItem.css('display', 'flex');
             
             // Get gift image
             const giftImg = giftImages[giftInfo.giftName] || giftInfo.giftPictureUrl || giftInfo.giftImage || defaultAvatar;
@@ -285,18 +290,18 @@
             thisItem.find(".profileImage").attr("src", userAvatar);
             thisItem.find(".giftImage").attr("src", giftImg);
             thisItem.find(".username").text(giftInfo.nickname || giftInfo.uniqueId);
-            thisItem.find(".comment").text(`Sent ${giftInfo.giftName}`);
+            thisItem.find(".giftText").text(`Sent ${giftInfo.giftName}`);
             thisItem.attr("data-ts", new Date().getTime());
 
             // Update repeat count
             if (giftInfo.repeatCount > 1) {
-                thisItem.find(".repeatCount b").text(`${giftInfo.repeatCount}x`);
+                thisItem.find(".repeatCount").text(`x${giftInfo.repeatCount}`);
             } else {
                 thisItem.find(".repeatCount").hide();
             }
 
-            // Apply username color
-            if (settings.gifts_usernameRgb) {
+            // Apply username color (purple/pink like original)
+            if (settings.gifts_usernameRgb !== false) {
                 const color = ensureRgbColor(giftInfo.userId || giftInfo.uniqueId);
                 thisItem.find(".username").css("color", color);
             }
@@ -306,22 +311,21 @@
                 thisItem.addClass("slideIn");
             }
 
-            chatContainer.append(thisItem);
+            // Add to top so newest gifts appear first
+            chatContainer.prepend(thisItem);
             
-            // Auto-remove after hideAfter seconds
-            if (settings.gifts_hideAfter > 0) {
-                setTimeout(() => {
-                    thisItem.addClass("fadeOut");
-                    setTimeout(() => thisItem.remove(), 1000);
-                }, settings.gifts_hideAfter * 1000);
-            }
+            // Auto-remove after 5 seconds to keep only recent gifts visible
+            setTimeout(() => {
+                thisItem.addClass("fadeOut");
+                setTimeout(() => thisItem.remove(), 1000);
+            }, 5000);
         }
 
-        // Demo mode with simulated gifts
+        // Demo mode with simulated gifts (matching original design examples)
         const demoGifts = [
-            { userId: 'user1', uniqueId: 'JohnDoe', nickname: 'JohnDoe', giftName: 'Rose', diamondCount: 10, repeatCount: 1 },
-            { userId: 'user2', uniqueId: 'JaneSmith', nickname: 'JaneSmith', giftName: 'TikTok', diamondCount: 100, repeatCount: 3 },
-            { userId: 'user3', uniqueId: 'BigFan', nickname: 'BigFan', giftName: 'Heart', diamondCount: 50, repeatCount: 5 },
+            { userId: 'user1', uniqueId: 'ExampleUser1', nickname: 'ExampleUser1', giftName: 'Doughnut', diamondCount: 10, repeatCount: 1 },
+            { userId: 'user2', uniqueId: 'ExampleUser2', nickname: 'ExampleUser2', giftName: 'Finger Heart', diamondCount: 100, repeatCount: 1 },
+            { userId: 'user3', uniqueId: 'ExampleUser1', nickname: 'ExampleUser1', giftName: 'GG', diamondCount: 50, repeatCount: 1 },
             { userId: 'user4', uniqueId: 'RichGuy', nickname: 'RichGuy', giftName: 'Lion', diamondCount: 29999, repeatCount: 1 },
             { userId: 'user5', uniqueId: 'Streamer', nickname: 'Streamer', giftName: 'Crown', diamondCount: 1000, repeatCount: 2 },
             { userId: 'user6', uniqueId: 'GalaxyFan', nickname: 'GalaxyFan', giftName: 'Galaxy', diamondCount: 5000, repeatCount: 1 }
@@ -385,30 +389,16 @@
 
 <body>
     <div id="chatContainer">
-        <div class="chatMessage" style="display: none;">
-            <table>
-                <tr>
-                    <td>
-                        <img class="profileImage" onerror="this.src='logo.png'" />
-                    </td>
-                    <td>
-                        <div class="username"></div>
-                        <div class="comment"></div>
-                    </td>
-                    <td>
-                        <div class="giftRight" style="display:table-row">
-                            <div style="display:table-cell; vertical-align: middle;">
-                                <div class="repeatCount">
-                                    <b></b>
-                                </div>
-                            </div>
-                            <div style="display:table-cell; vertical-align: middle;">
-                                <img class="giftImage">
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+        <div class="giftItem" style="display: none;">
+            <img class="profileImage" onerror="this.src='logo.png'" />
+            <div class="giftContent">
+                <div class="username"></div>
+                <div class="giftText"></div>
+            </div>
+            <div class="giftRight">
+                <div class="repeatCount"></div>
+                <img class="giftImage">
+            </div>
         </div>
     </div>
 
