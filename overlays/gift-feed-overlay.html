@@ -1,0 +1,404 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>
+    
+    <!-- TikHub App Logo for demo -->
+    <link rel="icon" type="image/png" href="/logo.png">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            overflow-x: hidden;
+            background: rgba(0, 0, 0, 0.8);
+            margin: 0;
+            padding: 10px;
+        }
+
+        #chatContainer {
+            width: 100%;
+            height: calc(100vh - 25px);
+            overflow-y: hidden;
+            overflow-wrap: break-word;
+            word-break: break-all;
+            overflow-x: hidden;
+        }
+
+        @keyframes chatMessageOpacityIntro {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes chatMessageSlideIntro {
+            0% {
+                left: 100px;
+            }
+
+            100% {
+                left: 0px;
+            }
+        }
+
+        .chatMessage {
+            position: relative;
+            margin-top: 4px;
+            overflow-wrap: break-word;
+            word-break: break-all;
+            max-width: 100%;
+            width: 100%;
+            overflow: hidden;
+            padding-top: 3px;
+            padding-left: 4px;
+            padding-right: 10px;
+            border-radius: 10px;
+        }
+
+        .comment {
+            overflow-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .username {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .profileImage {
+            margin-right: 5px;
+            border-radius: 15%;
+            height: 50px;
+            width: 50px;
+        }
+
+        .giftImage {
+            height: 50px;
+            width: 50px;
+        }
+
+        td {
+            vertical-align: top;
+        }
+
+        .giftRight {
+            position: absolute;
+            right: 20px;
+            margin-top: -4px;
+        }
+
+        .repeatCount {
+            margin-right: 5px;
+        }
+
+        .fadeOut {
+            animation-name: smoothFadeout;
+            animation-duration: 1s;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes smoothFadeout {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        @keyframes redBlinkAnimation {
+            0% {
+                background-color: transparent;
+            }
+
+            25% {
+                background-color: rgba(211, 65, 60, 0.56);
+            }
+
+            50% {
+                background-color: rgba(211, 65, 60, 0.56);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        @keyframes redGlowAnimation {
+            0% {
+                background-color: transparent;
+            }
+
+            10% {
+                background-color: rgba(211, 65, 60, 0.56);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .slideIn {
+            animation-name: chatMessageOpacityIntro, chatMessageSlideIntro;
+            animation-duration: 0.5s, 0.5s;
+            animation-iteration-count: 1, 1;
+        }
+
+        @keyframes foundAnimation {
+            0% {
+                background-color: transparent;
+            }
+
+            25% {
+                background-color: rgba(70, 203, 52, 0.56);
+            }
+
+            50% {
+                background-color: rgba(70, 203, 52, 0.56);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        @keyframes foundAnimationEnd {
+            0% {
+                background-color: transparent;
+            }
+
+            100% {
+                background-color: rgba(70, 203, 52, 0.56);
+            }
+        }
+
+        .found {
+            animation-name: foundAnimation, foundAnimationEnd, chatMessageOpacityIntro, chatMessageSlideIntro;
+            animation-duration: 0.5s, 0.3s, 0.5s, 0.5s;
+            animation-iteration-count: 3, 1, 1, 1;
+            animation-delay: 0s, 1.5s, 0s, 0s;
+            animation-fill-mode: none, forwards, none, none;
+        }
+
+        @keyframes repeatRefreshAnimation {
+            0% {
+                transform: scale(1.5, 1.5);
+            }
+
+            100% {
+                transform: scale(1.0, 1.0);
+            }
+        }
+
+        .repeatRefresh {
+            animation-name: repeatRefreshAnimation;
+            animation-duration: 0.5s;
+            animation-fill-mode: backwards;
+        }
+    </style>
+
+    <!-- Custom Gift Feed Script -->
+    <script>
+        // Default settings
+        var settings = {
+            gifts_minValue: 0,
+            gifts_showPictures: true,
+            gifts_mini: false,
+            gifts_usernameRgb: true,
+            gifts_slideEffect: true,
+            gifts_hideAfter: 0,
+            gifts_commentColor: '#ffffff',
+            gifts_backgroundColor: 'transparent'
+        };
+
+        // Demo gift images from TikTok (real gift images)
+        const giftImages = {
+            'Rose': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/6fb042c083b0381b1d49fe27e77d1d9e~tplv-obj.webp',
+            'TikTok': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/5c27d136380a218b7e384b520f4a0a8d~tplv-obj.webp',
+            'Heart': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8023e3e8a5e6e8b6b6e8f8e8e8e8e8e8~tplv-obj.webp',
+            'Lion': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/3e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e~tplv-obj.webp',
+            'Crown': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d~tplv-obj.webp',
+            'Galaxy': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d~tplv-obj.webp'
+        };
+
+        // Default/TikHub logo for profile
+        const defaultAvatar = '/logo.png';
+
+        var chatContainer = null;
+        var template = null;
+        var userIdColorMappings = {};
+
+        function rndColorPart(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+        }
+
+        function cloneTemplate() {
+            chatContainer = $("#chatContainer");
+            template = $(".chatMessage").first().clone();
+            template.css("display", "block");
+            $(".chatMessage").remove();
+        }
+
+        function enforceMessageLimit() {
+            const messages = $(".chatMessage");
+            if (messages.length > 50) {
+                messages.slice(0, 25).remove();
+            }
+        }
+
+        function ensureRgbColor(userId) {
+            if (!userIdColorMappings[userId]) {
+                userIdColorMappings[userId] = `rgba(${rndColorPart(100, 240)},${rndColorPart(100, 240)},${rndColorPart(100, 240)}, 1)`;
+            }
+            return userIdColorMappings[userId];
+        }
+
+        function handleGift(giftInfo) {
+            if (!template || !chatContainer) return;
+            enforceMessageLimit();
+
+            let thisItem = template.clone();
+            
+            // Get gift image
+            const giftImg = giftImages[giftInfo.giftName] || giftInfo.giftPictureUrl || giftInfo.giftImage || defaultAvatar;
+            
+            // Get user avatar (use app logo as default)
+            const userAvatar = giftInfo.profilePictureUrl || defaultAvatar;
+            
+            thisItem.find(".profileImage").attr("src", userAvatar);
+            thisItem.find(".giftImage").attr("src", giftImg);
+            thisItem.find(".username").text(giftInfo.nickname || giftInfo.uniqueId);
+            thisItem.find(".comment").text(`Sent ${giftInfo.giftName}`);
+            thisItem.attr("data-ts", new Date().getTime());
+
+            // Update repeat count
+            if (giftInfo.repeatCount > 1) {
+                thisItem.find(".repeatCount b").text(`${giftInfo.repeatCount}x`);
+            } else {
+                thisItem.find(".repeatCount").hide();
+            }
+
+            // Apply username color
+            if (settings.gifts_usernameRgb) {
+                const color = ensureRgbColor(giftInfo.userId || giftInfo.uniqueId);
+                thisItem.find(".username").css("color", color);
+            }
+
+            // Slide animation
+            if (settings.gifts_slideEffect !== false) {
+                thisItem.addClass("slideIn");
+            }
+
+            chatContainer.append(thisItem);
+            
+            // Auto-remove after hideAfter seconds
+            if (settings.gifts_hideAfter > 0) {
+                setTimeout(() => {
+                    thisItem.addClass("fadeOut");
+                    setTimeout(() => thisItem.remove(), 1000);
+                }, settings.gifts_hideAfter * 1000);
+            }
+        }
+
+        // Demo mode with simulated gifts
+        const demoGifts = [
+            { userId: 'user1', uniqueId: 'JohnDoe', nickname: 'JohnDoe', giftName: 'Rose', diamondCount: 10, repeatCount: 1 },
+            { userId: 'user2', uniqueId: 'JaneSmith', nickname: 'JaneSmith', giftName: 'TikTok', diamondCount: 100, repeatCount: 3 },
+            { userId: 'user3', uniqueId: 'BigFan', nickname: 'BigFan', giftName: 'Heart', diamondCount: 50, repeatCount: 5 },
+            { userId: 'user4', uniqueId: 'RichGuy', nickname: 'RichGuy', giftName: 'Lion', diamondCount: 29999, repeatCount: 1 },
+            { userId: 'user5', uniqueId: 'Streamer', nickname: 'Streamer', giftName: 'Crown', diamondCount: 1000, repeatCount: 2 },
+            { userId: 'user6', uniqueId: 'GalaxyFan', nickname: 'GalaxyFan', giftName: 'Galaxy', diamondCount: 5000, repeatCount: 1 }
+        ];
+
+        $(document).ready(() => {
+            cloneTemplate();
+            console.log('[Gift Feed] Ready - Demo mode active');
+            
+            // Simulate gifts every 3 seconds
+            setInterval(() => {
+                const randomGift = demoGifts[Math.floor(Math.random() * demoGifts.length)];
+                handleGift(randomGift);
+            }, 3000);
+            
+            // Also connect to WebSocket for real gifts
+            const wsUrl = (location.origin.replace(/^http/, 'ws')) + '/ws/gift-bubbles';
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('[Gift Feed] Connected to WebSocket');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'gift' || data.event === 'gift') {
+                        const source = data.giftData || data;
+                        handleGift({
+                            userId: source.userId || source.uniqueId,
+                            uniqueId: source.uniqueId || source.nickname,
+                            nickname: source.nickname || source.uniqueId,
+                            giftName: source.giftName || source.gift?.giftName || 'Gift',
+                            diamondCount: source.diamondCount || source.coins || 10,
+                            repeatCount: source.repeatCount || 1,
+                            giftPictureUrl: source.giftPictureUrl || source.giftImage,
+                            profilePictureUrl: source.profilePictureUrl
+                        });
+                    }
+                } catch (error) {
+                    console.error('[Gift Feed] Error parsing message:', error);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('[Gift Feed] WebSocket error:', error);
+            };
+        });
+    </script>
+</head>
+
+<body>
+    <div id="chatContainer">
+        <div class="chatMessage" style="display: none;">
+            <table>
+                <tr>
+                    <td>
+                        <img class="profileImage" onerror="this.src=nothumb" />
+                    </td>
+                    <td>
+                        <div class="username"></div>
+                        <div class="comment"></div>
+                    </td>
+                    <td>
+                        <div class="giftRight" style="display:table-row">
+                            <div style="display:table-cell; vertical-align: middle;">
+                                <div class="repeatCount">
+                                    <b></b>
+                                </div>
+                            </div>
+                            <div style="display:table-cell; vertical-align: middle;">
+                                <img class="giftImage">
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</body>
+
+</html>

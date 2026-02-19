@@ -1,0 +1,391 @@
+.text-effect {
+  display: inline-block;
+  position: relative;
+}
+
+.text-effect.text-effect--glow-enhanced:not(.text-effect--rainbow):not(.text-effect--aurora):not(.text-effect--wavy):not(.text-effect--wavy-slow):not(.text-effect--wavy-fast) {
+  text-shadow:
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor !important;
+}
+
+.text-effect--rainbow {
+  background: linear-gradient(
+    45deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow 3s linear infinite;
+}
+
+@keyframes rainbow-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes rainbow-flow-staggered {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 600% 50%; }
+}
+
+.text-effect--aurora {
+  background: linear-gradient(
+    135deg,
+    #667eea 0%,
+    #764ba2 25%,
+    #f093fb 50%,
+    #f5576c 75%,
+    #4facfe 100%
+  );
+  background-size: 300% 300%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aurora-shift 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.3));
+}
+
+.text-effect--aurora.text-effect--glow-enhanced {
+  filter: drop-shadow(0 0 3px rgba(102, 126, 234, 0.8));
+}
+
+@keyframes aurora-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+}
+
+.text-effect--neon-glow {
+  color: #00ffff;
+  text-shadow:
+    0 0 5px #00ffff,
+    0 0 10px #00ffff,
+    0 0 15px #00ffff,
+    0 0 20px #00ffff;
+  animation: neon-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes neon-pulse {
+  0% {
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 15px #00ffff,
+      0 0 20px #00ffff;
+  }
+  100% {
+    text-shadow:
+      0 0 2px #00ffff,
+      0 0 5px #00ffff,
+      0 0 8px #00ffff,
+      0 0 12px #00ffff,
+      0 0 20px #00ffff,
+      0 0 25px #00ffff;
+  }
+}
+
+.text-effect--neon-glow.text-effect--glow-enhanced {
+  animation: neon-pulse-enhanced 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes neon-pulse-enhanced {
+  0% {
+    text-shadow:
+      0 0 8px #00ffff,
+      0 0 16px #00ffff,
+      0 0 24px #00ffff,
+      0 0 32px #00ffff;
+  }
+  100% {
+    text-shadow:
+      0 0 4px #00ffff,
+      0 0 8px #00ffff,
+      0 0 16px #00ffff,
+      0 0 24px #00ffff,
+      0 0 32px #00ffff,
+      0 0 40px #00ffff,
+      0 0 48px #00ffff;
+  }
+}
+
+.text-effect--wavy,
+.text-effect--wavy-slow,
+.text-effect--wavy-fast {
+  display: inline-flex;
+}
+
+.text-effect--wavy .wave-char {
+  display: inline-block;
+  animation: wave-motion 2s ease-in-out infinite;
+  animation-delay: var(--char-delay, 0s);
+}
+
+.text-effect--wavy-slow .wave-char {
+  display: inline-block;
+  animation: wave-motion 4s ease-in-out infinite;
+  animation-delay: var(--char-delay, 0s);
+}
+
+.text-effect--wavy-fast .wave-char {
+  display: inline-block;
+  animation: wave-motion 1s ease-in-out infinite;
+  animation-delay: var(--char-delay, 0s);
+}
+
+@keyframes wave-motion {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.text-effect--wavy.text-effect--glow-enhanced .wave-char,
+.text-effect--wavy-slow.text-effect--glow-enhanced .wave-char,
+.text-effect--wavy-fast.text-effect--glow-enhanced .wave-char {
+  text-shadow:
+    0 0 2px currentColor,
+    0 0 4px currentColor;
+}
+
+.text-effect--rainbow.text-effect--glow-enhanced {
+  filter: drop-shadow(0 0 2px rgba(255, 100, 255, 0.8))
+          drop-shadow(0 0 4px rgba(100, 255, 255, 0.6))
+          drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+  -webkit-text-fill-color: transparent !important;
+}
+
+.text-effect--rainbow.text-effect--wavy.text-effect--glow-enhanced .rainbow-wave-char,
+.text-effect--rainbow.text-effect--wavy-slow.text-effect--glow-enhanced .rainbow-wave-char,
+.text-effect--rainbow.text-effect--wavy-fast.text-effect--glow-enhanced .rainbow-wave-char {
+  -webkit-text-fill-color: transparent;
+}
+
+.text-effect--aurora.text-effect--wavy.text-effect--glow-enhanced .wave-char,
+.text-effect--aurora.text-effect--wavy-slow.text-effect--glow-enhanced .wave-char,
+.text-effect--aurora.text-effect--wavy-fast.text-effect--glow-enhanced .wave-char {
+  text-shadow:
+    0 0 5px rgba(255, 255, 255, 0.8),
+    0 0 10px rgba(255, 255, 255, 0.6),
+    0 0 15px rgba(255, 255, 255, 0.4);
+}
+
+.text-effect--neon-glow.text-effect--wavy.text-effect--glow-enhanced .wave-char,
+.text-effect--neon-glow.text-effect--wavy-slow.text-effect--glow-enhanced .wave-char,
+.text-effect--neon-glow.text-effect--wavy-fast.text-effect--glow-enhanced .wave-char {
+  text-shadow:
+    0 0 5px #00ffff,
+    0 0 10px #00ffff,
+    0 0 15px #00ffff,
+    0 0 20px #00ffff;
+}
+
+.text-effect--rainbow.text-effect--wavy .rainbow-wave-char {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 600% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow-staggered 4s linear infinite, wave-motion 2s ease-in-out infinite;
+  animation-delay: calc(var(--char-delay, 0s) * 0.5), var(--char-delay, 0s);
+}
+
+.text-effect--rainbow.text-effect--wavy-slow .rainbow-wave-char {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 600% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow-staggered 4s linear infinite, wave-motion 4s ease-in-out infinite;
+  animation-delay: calc(var(--char-delay, 0s) * 0.5), var(--char-delay, 0s);
+}
+
+.text-effect--rainbow.text-effect--wavy-fast .rainbow-wave-char {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 600% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow-staggered 4s linear infinite, wave-motion 1s ease-in-out infinite;
+  animation-delay: calc(var(--char-delay, 0s) * 0.5), var(--char-delay, 0s);
+}
+
+.text-effect--rainbow.text-effect--wavy .wave-char:not(.rainbow-wave-char) {
+  background: linear-gradient(
+    45deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow 3s linear infinite, wave-motion 2s ease-in-out infinite;
+  animation-delay: 0s, var(--char-delay, 0s);
+}
+
+.text-effect--rainbow.text-effect--wavy-slow .wave-char:not(.rainbow-wave-char) {
+  background: linear-gradient(
+    45deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow 3s linear infinite, wave-motion 4s ease-in-out infinite;
+  animation-delay: 0s, var(--char-delay, 0s);
+}
+
+.text-effect--rainbow.text-effect--wavy-fast .wave-char:not(.rainbow-wave-char) {
+  background: linear-gradient(
+    45deg,
+    #ff0000 0%,
+    #ff7700 14%,
+    #ffff00 28%,
+    #00ff00 42%,
+    #0077ff 56%,
+    #4b0082 70%,
+    #8b00ff 84%,
+    #ff0000 100%
+  );
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow 3s linear infinite, wave-motion 1s ease-in-out infinite;
+  animation-delay: 0s, var(--char-delay, 0s);
+}
+
+.text-effect--aurora.text-effect--wavy .wave-char,
+.text-effect--aurora.text-effect--wavy-slow .wave-char,
+.text-effect--aurora.text-effect--wavy-fast .wave-char {
+  background: inherit;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-effect--neon-glow.text-effect--wavy .wave-char {
+  color: inherit;
+  text-shadow: inherit;
+  display: inline-block;
+  animation: wave-motion 2s ease-in-out infinite;
+  animation-delay: var(--char-delay, 0s);
+}
+
+.text-effect--neon-glow.text-effect--wavy-slow .wave-char {
+  color: inherit;
+  text-shadow: inherit;
+  display: inline-block;
+  animation: wave-motion 4s ease-in-out infinite;
+  animation-delay: var(--char-delay, 0s);
+}
+
+.text-effect--neon-glow.text-effect--wavy-fast .wave-char {
+  color: inherit;
+  text-shadow: inherit;
+  display: inline-block;
+  animation: wave-motion 1s ease-in-out infinite;
+  animation-delay: var(--char-delay, 0s);
+}
+
+.text-effect {
+  will-change: transform, filter, background-position;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-effect--rainbow,
+  .text-effect--aurora,
+  .text-effect--neon-glow,
+  .text-effect--wavy .wave-char {
+    animation: none !important;
+  }
+
+  .text-effect--rainbow,
+  .text-effect--aurora {
+    background-position: 0% 50% !important;
+  }
+
+  .text-effect--neon-glow {
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff !important;
+  }
+
+  .text-effect--wavy .wave-char {
+    transform: translateY(0px) !important;
+  }
+}
