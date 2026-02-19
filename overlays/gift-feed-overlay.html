@@ -235,8 +235,11 @@
             'Galaxy': 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d~tplv-obj.webp'
         };
 
-        // Default/TikHub logo for profile
-        const defaultAvatar = '/logo.png';
+        // Default avatar (TikHub logo)
+        const defaultAvatar = 'logo.png';
+        
+        // Fallback for image errors
+        const nothumb = defaultAvatar;
 
         var chatContainer = null;
         var template = null;
@@ -324,17 +327,27 @@
             { userId: 'user6', uniqueId: 'GalaxyFan', nickname: 'GalaxyFan', giftName: 'Galaxy', diamondCount: 5000, repeatCount: 1 }
         ];
 
+        // Check if demo mode is enabled (via URL parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDemoMode = urlParams.get('demo') === 'true';
+
         $(document).ready(() => {
             cloneTemplate();
-            console.log('[Gift Feed] Ready - Demo mode active');
             
-            // Simulate gifts every 3 seconds
-            setInterval(() => {
-                const randomGift = demoGifts[Math.floor(Math.random() * demoGifts.length)];
-                handleGift(randomGift);
-            }, 3000);
+            // Only show demo gifts if demo mode is enabled
+            if (isDemoMode) {
+                console.log('[Gift Feed] Ready - Demo mode active');
+                
+                // Simulate gifts every 3 seconds
+                setInterval(() => {
+                    const randomGift = demoGifts[Math.floor(Math.random() * demoGifts.length)];
+                    handleGift(randomGift);
+                }, 3000);
+            } else {
+                console.log('[Gift Feed] Ready - Real gift mode (no demo)');
+            }
             
-            // Also connect to WebSocket for real gifts
+            // Always connect to WebSocket for real gifts
             const wsUrl = (location.origin.replace(/^http/, 'ws')) + '/ws/gift-bubbles';
             const ws = new WebSocket(wsUrl);
             
@@ -376,7 +389,7 @@
             <table>
                 <tr>
                     <td>
-                        <img class="profileImage" onerror="this.src=nothumb" />
+                        <img class="profileImage" onerror="this.src='logo.png'" />
                     </td>
                     <td>
                         <div class="username"></div>
