@@ -54,6 +54,8 @@
             padding: 6px 12px;
             animation: slideIn 0.3s ease-out;
             min-height: 40px;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         .profileImage {
@@ -314,11 +316,6 @@
             // Add to top so newest gifts appear first
             chatContainer.prepend(thisItem);
             
-            // Auto-remove after 5 seconds to keep only recent gifts visible
-            setTimeout(() => {
-                thisItem.addClass("fadeOut");
-                setTimeout(() => thisItem.remove(), 1000);
-            }, 5000);
         }
 
         // Demo mode with simulated gifts (matching original design examples)
