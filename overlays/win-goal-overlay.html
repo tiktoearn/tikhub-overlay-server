@@ -145,6 +145,9 @@
             const data = JSON.parse(event.data);
             if (data.type === 'win-goal-update') {
               updateWinGoalDisplay(data);
+            } else if (data.type === 'initial-state' && data.state) {
+              // Handle initial state from server
+              updateWinGoalDisplay(data.state);
             }
           } catch (error) {
             console.error('[Win Goal] Error parsing WebSocket message:', error);
