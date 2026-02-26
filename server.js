@@ -283,6 +283,10 @@ app.post('/event/like', (req, res) => {
         // User already exists, update their like count
         storage.state.topLikers.topLikers[userIndex].totalAmount += likeCount;
         storage.state.topLikers.topLikers[userIndex].lastSeen = Date.now();
+        // Update profile picture URL if provided (in case it wasn't available before)
+        if (likeData.profilePictureUrl) {
+            storage.state.topLikers.topLikers[userIndex].profilePictureUrl = likeData.profilePictureUrl;
+        }
     } else {
         // New user, add them to the list
         storage.state.topLikers.topLikers.push({
