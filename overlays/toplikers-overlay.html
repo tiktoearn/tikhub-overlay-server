@@ -2,382 +2,547 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top Likers Overlay - TikHub</title>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background: transparent;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
+            overflow-x: hidden;
+            margin-top: 20px !important;
+            background: transparent;
             color: #fff;
         }
-        
-        #toplikers-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            font-family: Arial;
-            color: #fff;
-            overflow: hidden;
-        }
-        
-        #title {
-            text-align: center;
-            padding: 10px;
-            font-size: 24px;
-            color: #ffffff;
-            font-weight: bold;
-            text-shadow: 1px 1px 1px #000000;
-        }
-        
+
         #rankingContainer {
             width: 100%;
-            height: calc(100% - 60px);
+            height: calc(100vh - 25px);
             overflow: hidden;
-            overflow-y: auto;
+            overflow-y: hidden;
+            overflow-wrap: break-word;
+            width: fit-content;
         }
-        
+
         .rankUser {
-            margin: 3px 0;
-            padding: 3px 5px;
-            border-radius: 5px;
-            background-color: rgba(33, 33, 33, 0.4);
+            margin-top: 3px;
+            margin-bottom: 3px;
         }
-        
-        .rankUser table {
-            width: 100%;
-            border-collapse: collapse;
+
+        .username {
+            font-weight: bold;
         }
-        
+
+        img {
+            margin-right: 3px;
+        }
+
+        td {
+            vertical-align: top;
+        }
+
         .rankId {
             font-size: 1.3em;
             font-weight: bold;
             width: 30px;
             text-align: center;
-            color: #ffffff;
+            direction: ltr;
         }
-        
-        .profilePicture {
-            height: 50px;
-            width: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
+
         .username {
-            font-weight: bold;
-            color: #ffffff;
             padding-left: 5px;
             padding-right: 5px;
-            text-shadow: 1px 1px 1px #000000;
+            margin-left: -5px;
         }
-        
+
         .points {
             padding-left: 10px;
             padding-right: 5px;
-            color: #ffffff;
-            text-shadow: 1px 1px 1px #000000;
+            margin-left: -5px;
         }
-        
+
         .firstPlace {
-            background-color: #ffcf208c !important;
+            background-color: #ffcf208c;
             border-radius: 25px;
         }
-        
+
         .secondPlace {
-            background-color: #b2b2b28c !important;
+            background-color: #b2b2b28c;
             border-radius: 25px;
         }
-        
+
         .thirdPlace {
-            background-color: #ff9c218c !important;
+            background-color: #ff9c218c;
             border-radius: 25px;
         }
-        
+
+        img {
+            border-radius: 50%;
+        }
+
         .crown1 {
-            position: absolute;
+            position: fixed;
             height: 45px;
             margin-top: -27px;
             margin-left: 2px;
-            display: block;
         }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            30% { transform: scale(1.5); }
-            100% { transform: scale(1); }
+
+        .winnerCrown {
+            position: fixed;
+            height: 70px;
+            margin-top: -29px;
+            margin-left: 16px;
         }
-        
-        @keyframes countUp {
-            0% { transform: scale(1); }
-            20% { transform: scale(1.4); }
-            100% { transform: scale(1); }
+
+        #winnerContainer {
+            width: 100%;
+            text-align: center;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            border-radius: 25px;
         }
-        
+
+        .winnerThumb {
+            height: 100px;
+            width: 100px;
+            margin-top: 15px;
+        }
+
+
+        .box {
+            padding-top: 3px;
+            background-color: rgba(33, 33, 33, 0.4);
+            padding-left: 5px;
+            padding-right: 10px;
+            border-radius: 5px;
+        }
+
         .pulse {
             animation: pulse 1s;
         }
-        
-        .countUp {
-            animation: countUp 0.5s;
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            30% {
+                transform: scale(1.5);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes countUp {
+            0% {
+                transform: scale(1);
+            }
+
+            20% {
+                transform: scale(1.4);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideIn {
+            0% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(0%);
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="toplikers-overlay">
-        <div id="title">Top Likers</div>
-        <div id="rankingContainer"></div>
+    <pre id="error"></pre>
+
+    <div id="rankingContainer">
+        <div class="rankUser">
+            <table>
+                <tbody><tr>
+                    <td class="rankId">
+                        1.
+                    </td>
+                    <td>
+                        <img src="images/gold_crown.svg" class="crown1" style="display: none;">
+                        <img style="height: 50px; width: 50px;" class="profilePicture" onerror="this.src='https://ui-avatars.com/api/?name=Unknown&background=444&color=fff'">
+                    </td>
+                    <td>
+                        <table>
+                            <tbody><tr>
+                                <td>
+
+                                </td>
+                                <td>
+                                    <div class="username">Testuser</div>
+                                </td>
+                            </tr>
+                        </tbody></table>
+
+                        <div class="points"></div>
+
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
     </div>
 
     <script>
-        // Configuration
-        const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/topstreak` : 'wss://overlay.tikhub.site/ws/topstreak';
-        
-        let ws = null;
-        let topLikers = [];
-        let lastActivity = {};
-        const maxUsers = 10;
-        
-        // Default settings
-        const defaultSettings = {
-            title: 'Top Likers',
-            titleSize: 24,
-            titleColor: '#ffffff',
-            usernameColor: '#ffffff',
-            rankColor: '#ffffff',
-            pointsColor: '#ffffff',
-            backgroundColor: 'transparent',
-            showRank: true,
-            showLikes: true,
-            showCrown: true,
-            crownSize: 45,
-            maxUsers: 10,
-            enableBorder: false,
-            borderColor: '#000000',
-            rightToLeft: false,
-            pulseAnimation: true
+        var rankingContainer = null;
+        var template = null;
+        var nothumb = "https://ui-avatars.com/api/?name=Unknown&background=444&color=fff";
+        var lastSetRanking = null;
+        var forceReload = false;
+        var userLastValues = {};
+        var userPlaces = {};
+        var lastLikeActivity = {};
+        var settings = {
+            topliker_usernameColor: '#ffffff',
+            topliker_rankColor: '#ffffff',
+            topliker_pointsColor: '#ffffff',
+            currencyName: 'Likes',
+            topliker_showRank: true,
+            topliker_showBoxShadow: true,
+            topliker_boxShadowColor: 'rgba(33, 33, 33, 0.4)',
+            topliker_showLikes: true,
+            topliker_enableBorder: false,
+            topliker_borderColor: '#000000',
+            topliker_rightToLeft: false,
+            topliker_showTrophy: false,
+            topliker_showHeartSymbol: true,
+            topliker_pulseHeartSymbol: true,
+            topliker_showCrown: true,
+            topliker_maxUsers: 10
         };
-        
-        let settings = {...defaultSettings};
-        
-        // Get profile picture with fallback
-        function getProfilePicture(user) {
-            return user.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || user.username)}&background=random&color=fff`;
+
+        function updateSettings(hasChanges) {
+            if (!settings) return;
+            if (settings.topliker_usernameColor) $(".username").css("color", settings.topliker_usernameColor);
+            if (settings.topliker_rankColor) $(".rankId").css("color", settings.topliker_rankColor);
+            if (settings.topliker_pointsColor) $(".points").css("color", settings.topliker_pointsColor);
+
+            if (settings.currencyName) $(".currencyName").text(settings.currencyName);
+
+            if (settings.topliker_showRank === true) {
+                $(".rankId").css("display", "block");
+            } else {
+                $(".rankId").css("display", "none");
+            }
+
+            if (settings.topliker_showBoxShadow === true) {
+                $(".rankUser").addClass("box");
+                if (settings.topliker_boxShadowColor) $(".box").css("background-color", settings.topliker_boxShadowColor);
+            } else {
+                $(".rankUser").removeClass("box");
+                $(".rankUser").css("background-color", "transparent");
+            }
+
+            if (settings.topliker_showLikes === false) {
+                $(".points").css("display", "none");
+            } else {
+                $(".points").css("display", "block");
+            }
+
+            if (settings.topliker_enableBorder === true) {
+                $('body').css("text-shadow", `${settings.topliker_borderColor} 1px 1px 1px`);
+            } else {
+                $('body').css("text-shadow", 'inherit');
+            }
+
+            let rtlEnabled = settings.topliker_rightToLeft;
+            let subDirection = rtlEnabled ? 'ltr' : 'initial';
+            let subAlign = rtlEnabled ? 'right' : 'initial';
+            $('.username').css('direction', subDirection);
+            $('.username').css('text-align', subAlign);
+            $('.points').css('direction', subDirection);
+            $('.points').css('text-align', subAlign);
+
+            if (hasChanges) {
+                forceReload = true;
+                updateRanking();
+            }
         }
-        
-        // Get crown class based on rank
-        function getCrownClass(rank) {
-            if (!settings.showCrown) return '';
-            if (rank === 1) return 'firstPlace';
-            if (rank === 2) return 'secondPlace';
-            if (rank === 3) return 'thirdPlace';
-            return '';
-        }
-        
-        // Handle pulse animation
-        function shouldPulse(userId) {
-            if (!settings.pulseAnimation) return false;
-            const lastActivityTime = lastActivity[userId];
-            return lastActivityTime && (Date.now() - lastActivityTime) < 10000;
-        }
-        
-        // Update the leaderboard display
-        function updateLeaderboard() {
-            const container = document.getElementById('rankingContainer');
-            const title = document.getElementById('title');
-            
-            // Update title
-            title.textContent = settings.title;
-            title.style.fontSize = `${settings.titleSize}px`;
-            title.style.color = settings.titleColor;
-            title.style.textShadow = settings.enableBorder ? `1px 1px 1px ${settings.borderColor}` : 'none';
-            
-            // Update container direction
-            container.style.direction = settings.rightToLeft ? 'rtl' : 'ltr';
-            
-            // Clear container
-            container.innerHTML = '';
-            
-            // Add users
-            topLikers.slice(0, settings.maxUsers).forEach((user, index) => {
-                const rank = index + 1;
-                const userDiv = document.createElement('div');
-                userDiv.className = `rankUser ${getCrownClass(rank)}`;
-                userDiv.style.animation = shouldPulse(user.userId) ? 'pulse 1s' : 'none';
+
+        let lastUserList = [];
+
+        function updateRanking(userList) {
+            if (!userList) {
+                userList = lastUserList;
+            }
+
+            lastUserList = userList;
+
+            if (!settings) return;
+
+            var counter = 0;
+
+            // Limit users based on settings
+            var maxUsers = settings.topliker_maxUsers || 10;
+            userList = userList.slice(0, maxUsers);
+
+            var currency = (new URLSearchParams(document.location.search)).get("currency");
+            if (!currency) currency = "";
+
+            var currentRankingJson = JSON.stringify(userList);
+            if (currentRankingJson === lastSetRanking && forceReload === false) {
+                console.log("currentRankingJson no changes, return...");
+                return;
+            }
+
+            lastSetRanking = currentRankingJson;
+            forceReload = false;
+
+            $(".rankUser").remove();
+
+            userList.forEach(user => {
+                counter += 1;
+                var thisItem = template.clone();
+
+                user.totalAmount = parseFloat(user.totalAmount);
+
+                thisItem.find(".profilePicture").attr("src", user.profilePictureUrl || nothumb);
                 
-                userDiv.innerHTML = `
-                    <table>
-                        <tbody>
-                            <tr>
-                                <td class="rankId" style="display: ${settings.showRank ? 'table-cell' : 'none'}; color: ${settings.rankColor}; direction: ltr;">
-                                    ${rank}.
-                                </td>
-                                <td style="width: 50px; padding: 0 3px;">
-                                    ${settings.showCrown && rank === 1 ? 
-                                        `<img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8545008005009041209.png~tplv-obj.webp" class="crown1" style="height: ${settings.crownSize}px; margin-top: -27px; margin-left: 2px; display: block;">` : 
-                                        ''
-                                    }
-                                    <img src="${getProfilePicture(user)}" class="profilePicture" 
-                                         onerror="this.src='https://ui-avatars.com/api/?name=Unknown&background=444&color=fff'">
-                                </td>
-                                <td style="vertical-align: top;">
-                                    <table style="width: 100%">
-                                        <tbody>
-                                            <tr>
-                                                <td></td>
-                                                <td>
-                                                    <div class="username" style="color: ${settings.usernameColor}; text-shadow: ${settings.enableBorder ? `1px 1px 1px ${settings.borderColor}` : 'none'}">
-                                                        ${user.nickname || user.username}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <div class="points" style="color: ${settings.pointsColor}; display: ${settings.showLikes ? 'block' : 'none'}; text-shadow: ${settings.enableBorder ? `1px 1px 1px ${settings.borderColor}` : 'none'}">
-                                        <span class="${shouldPulse(user.userId) ? 'countUp' : ''}">
-                                            ${user.totalAmount?.toLocaleString() || user.likeCount?.toLocaleString() || '0'} Likes
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                `;
-                
-                container.appendChild(userDiv);
+                // Use emoji badges for top 3, numbers for others
+                if (counter === 1) {
+                    thisItem.find(".rankId").html('🏆');
+                } else if (counter === 2) {
+                    thisItem.find(".rankId").html('🥈');
+                } else if (counter === 3) {
+                    thisItem.find(".rankId").html('🥉');
+                } else {
+                    thisItem.find(".rankId").text(counter + ".");
+                }
+
+                if (user.userId && userPlaces[counter] !== user.userId && (!userLastValues[user.userId] || user.totalAmount > userLastValues[user.userId])) {
+                    userPlaces[counter] = user.userId;
+                    thisItem.css('animation', 'slideIn 0.5s');
+                }
+
+                if (settings && settings.topliker_showTrophy) {
+                    if (counter === 1) thisItem.find(".rankId").html($('<img>').attr('src', './img/badges/1-place.png').css('height', '1.2em'));
+                    if (counter === 2) thisItem.find(".rankId").html($('<img>').attr('src', './img/badges/2-place.png').css('height', '1.2em'));
+                    if (counter === 3) thisItem.find(".rankId").html($('<img>').attr('src', './img/badges/3-place.png').css('height', '1.2em'));
+                }
+
+                thisItem.find(".rankId").css('margin-right', '0.2em');
+
+                thisItem.find(".username").text(user.nickname || user.username);
+
+                if (settings && settings.topliker_showHeartSymbol !== false) {
+                    thisItem.find(".points").css('vertical-align', 'top');
+
+                    thisItem.find(".points").append($('<div>').html(`
+                            <svg width="12" class="heartIcon" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 107.39"><defs><style>.cls-1{fill:#ed1b24;fill-rule:evenodd;}</style></defs><title>red-heart</title><path class="cls-1" d="M60.83,17.18c8-8.35,13.62-15.57,26-17C110-2.46,131.27,21.26,119.57,44.61c-3.33,6.65-10.11,14.56-17.61,22.32-8.23,8.52-17.34,16.87-23.72,23.2l-17.4,17.26L46.46,93.55C29.16,76.89,1,55.92,0,29.94-.63,11.74,13.73.08,30.25.29c14.76.2,21,7.54,30.58,16.89Z"/></svg>
+                        `).css('display', 'inline-block').css('margin-right', '5px').css('margin-top', '1px'));
+
+                    thisItem.find(".points").append($("<span>").text(user.totalAmount.toLocaleString()));
+                } else {
+                    thisItem.find(".points").append($("<span>").text(user.totalAmount.toLocaleString() + " Likes"));
+                }
+
+                thisItem.find(".points").find("span").css('display', 'inline-block').css('margin-left', '4px');
+
+                if (user.userId && (!userLastValues[user.userId] || user.totalAmount > userLastValues[user.userId])) {
+                    userLastValues[user.userId] = user.totalAmount;
+
+                    thisItem.find(".points").find("span").css("animation", "countUp 0.5s");
+
+                    lastLikeActivity[user.userId] = Date.now();
+                }
+
+                if (lastLikeActivity[user.userId] && Date.now() - lastLikeActivity[user.userId] < 10000 && settings && settings.topliker_pulseHeartSymbol !== false) {
+                    thisItem.find(".points").find(".heartIcon").css('animation', 'pulse 1s 15');
+                }
+
+                if (counter === 1) {
+                    if (settings && settings.topliker_showCrown !== false) {
+                        thisItem.find(".crown1").css("display", "block");
+                    }
+
+                    thisItem.find(".profilePicture").css('border', '3px solid rgb(246 183 56)');
+                    thisItem.find(".profilePicture").css('height', '44px');
+                    thisItem.find(".profilePicture").css('width', '44px');
+                }
+
+                if (counter === 2) {
+                    thisItem.find(".profilePicture").css('border', '3px solid rgb(192,192,192)');
+                    thisItem.find(".profilePicture").css('height', '44px');
+                    thisItem.find(".profilePicture").css('width', '44px');
+                }
+
+                if (counter === 3) {
+                    thisItem.find(".profilePicture").css('border', '3px solid rgb(205, 127, 50)');
+                    thisItem.find(".profilePicture").css('height', '44px');
+                    thisItem.find(".profilePicture").css('width', '44px');
+                }
+
+                if (counter > 3) {
+                    thisItem.find(".profilePicture").css('border', '3px solid transparent');
+                    thisItem.find(".profilePicture").css('height', '44px');
+                    thisItem.find(".profilePicture").css('width', '44px');
+                }
+
+                setTimeout(function () {
+                    thisItem.fadeIn(100);
+                }, 100 * counter);
+
+                rankingContainer.append(thisItem);
             });
+
+            updateSettings();
         }
-        
-        // WebSocket connection
-        function connectWebSocket() {
+
+        $(window).on("load", () => {
+            $("#error").hide();
+
+            updateSettings();
+
+            rankingContainer = $("#rankingContainer");
+            template = $(".rankUser").first().clone();
+            template.css("display", "block");
+
+            $(".rankUser").remove();
+
+            // Connect to WebSocket
+            const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/toplikers` : 'wss://overlay.tikhub.site/ws/toplikers';
+            
             try {
-                console.log('[TopLikers] Connecting to WebSocket:', wsUrl);
-                ws = new WebSocket(wsUrl);
+                const socket = new WebSocket(wsUrl);
                 
-                ws.onopen = () => {
-                    console.log('✅ [TopLikers] Connected to overlay WebSocket');
+                socket.onopen = () => {
+                    console.log('✅ [TopLikers] Connected to WebSocket');
                 };
                 
-                ws.onmessage = (event) => {
+                socket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        console.log('[TopLikers] Received WebSocket message:', data);
+                        console.log('[TopLikers] Received message:', data);
                         
-                        // Handle different message types
-                        if ((data.type === 'toplikers_update' || data.type === 'topstreak_update') && data.users) {
-                            // Update the leaderboard
-                            topLikers = [...data.users]
-                                .sort((a, b) => (b.totalAmount || b.likeCount || 0) - (a.totalAmount || a.likeCount || 0))
-                                .map((user, index) => ({
-                                    ...user,
-                                    rank: index + 1
-                                }));
-                            
-                            // Update last activity for animation
-                            topLikers.forEach(user => {
-                                const amount = user.totalAmount || user.likeCount || 0;
-                                const prevAmount = lastActivity[user.userId];
-                                if (prevAmount !== amount) {
-                                    lastActivity[user.userId] = Date.now();
-                                }
-                            });
-                            
-                            updateLeaderboard();
-                            
-                        } else if (data.type === 'topstreak_update' && data.topUsers) {
-                            // Handle topstreak format
-                            topLikers = [...data.topUsers]
-                                .sort((a, b) => (b.totalAmount || b.likeCount || 0) - (a.totalAmount || a.likeCount || 0))
-                                .map((user, index) => ({
-                                    ...user,
-                                    userId: user.userId || user.id || user.nickname,
-                                    totalAmount: user.totalAmount || user.likeCount || 0,
-                                    rank: index + 1
-                                }));
-                            
-                            // Update last activity for animation
-                            topLikers.forEach(user => {
-                                const amount = user.totalAmount || user.likeCount || 0;
-                                const prevAmount = lastActivity[user.userId];
-                                if (prevAmount !== amount) {
-                                    lastActivity[user.userId] = Date.now();
-                                }
-                            });
-                            
-                            updateLeaderboard();
-                            
-                        } else if (data.type === 'topstreak-settings-update' && data.settings) {
-                            // Update settings
-                            settings = {...defaultSettings, ...data.settings};
-                            updateLeaderboard();
+                        if (data.type === 'toplikers_update' && data.users) {
+                            updateRanking(data.users);
+                        } else if (data.type === 'topstreak_update' && (data.users || data.topUsers)) {
+                            updateRanking(data.users || data.topUsers);
                         }
                     } catch (err) {
-                        console.error('[TopLikers] Error parsing WebSocket data:', err);
+                        console.error('[TopLikers] Error parsing message:', err);
                     }
                 };
                 
-                ws.onclose = () => {
-                    console.log('[TopLikers] Disconnected from overlay WebSocket');
+                socket.onclose = () => {
+                    console.log('[TopLikers] Disconnected from WebSocket');
                     // Attempt to reconnect after 3 seconds
-                    setTimeout(connectWebSocket, 3000);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
                 };
                 
-                ws.onerror = (err) => {
-                    console.error('[TopLikers] WebSocket error:', err);
+                socket.onerror = (error) => {
+                    console.error('[TopLikers] WebSocket error:', error);
                 };
                 
             } catch (err) {
                 console.error('[TopLikers] Failed to create WebSocket connection:', err);
             }
-        }
-        
-        // Initialize
-        function init() {
-            // Set background
-            document.getElementById('toplikers-overlay').style.background = settings.backgroundColor;
+
+            // Preview functionality
+            let previewIndex = 0;
+            let previewEnabled = true;
+
+            // Show sample data initially
+            const sampleData = [
+                { userId: '1', username: 'sampleuser1', nickname: 'Top Fan', totalAmount: 25420, profilePictureUrl: 'https://ui-avatars.com/api/?name=Top+Fan&background=random&color=fff' },
+                { userId: '2', username: 'sampleuser2', nickname: 'Like Master', totalAmount: 18350, profilePictureUrl: 'https://ui-avatars.com/api/?name=Like+Master&background=random&color=fff' },
+                { userId: '3', username: 'sampleuser3', nickname: 'Heart Collector', totalAmount: 15876, profilePictureUrl: 'https://ui-avatars.com/api/?name=Heart+Collector&background=random&color=fff' },
+                { userId: '4', username: 'sampleuser4', nickname: 'Fan 4 Life', totalAmount: 12654, profilePictureUrl: 'https://ui-avatars.com/api/?name=Fan+4+Life&background=random&color=fff' },
+                { userId: '5', username: 'sampleuser5', nickname: 'Liker Pro', totalAmount: 9432, profilePictureUrl: 'https://ui-avatars.com/api/?name=Liker+Pro&background=random&color=fff' },
+                { userId: '6', username: 'sampleuser6', nickname: 'Super Supporter', totalAmount: 7210, profilePictureUrl: 'https://ui-avatars.com/api/?name=Super+Supporter&background=random&color=fff' },
+                { userId: '7', username: 'sampleuser7', nickname: 'Engagement King', totalAmount: 5890, profilePictureUrl: 'https://ui-avatars.com/api/?name=Engagement+King&background=random&color=fff' },
+                { userId: '8', username: 'sampleuser8', nickname: 'Community Leader', totalAmount: 3678, profilePictureUrl: 'https://ui-avatars.com/api/?name=Community+Leader&background=random&color=fff' },
+                { userId: '9', username: 'sampleuser9', nickname: 'Active Member', totalAmount: 2456, profilePictureUrl: 'https://ui-avatars.com/api/?name=Active+Member&background=random&color=fff' },
+                { userId: '10', username: 'sampleuser10', nickname: 'Regular Viewer', totalAmount: 1234, profilePictureUrl: 'https://ui-avatars.com/api/?name=Regular+Viewer&background=random&color=fff' }
+            ];
             
-            // Connect to WebSocket
-            connectWebSocket();
-            
-            // Load settings from API if available
-            fetch('/api/topstreak-settings')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.settings) {
-                        settings = {...defaultSettings, ...data.settings};
-                        updateLeaderboard();
+            // Display sample data initially
+            setTimeout(() => {
+                updateRanking(sampleData);
+            }, 1000);
+
+            window.preview = function () {
+                if (!previewEnabled) return;
+                previewIndex += 1;
+
+                if (previewIndex > 5) {
+                    previewIndex = 0;
+                    return;
+                }
+
+                const exampleProfilePicture = 'https://ui-avatars.com/api/?name=Example&background=random&color=fff';
+
+                const rankingData = [
+                    { totalAmount: 15420, username: "exampleuser1", nickname: "Top Fan", profilePictureUrl: exampleProfilePicture, userId: "1" },
+                    { totalAmount: 12350, username: "exampleuser2", nickname: "Like Master", profilePictureUrl: exampleProfilePicture, userId: "2" },
+                    { totalAmount: 9876, username: "exampleuser3", nickname: "Heart Collector", profilePictureUrl: exampleProfilePicture, userId: "3" },
+                    { totalAmount: 7654, username: "exampleuser4", nickname: "Fan 4 Life", profilePictureUrl: exampleProfilePicture, userId: "4" }
+                ];
+
+                updateRanking(rankingData);
+            };
+
+            // Auto-preview in editor/iframe
+            if (window.self !== window.top) {
+                setTimeout(() => {
+                    if (typeof window.preview === 'function') {
+                        window.preview();
                     }
-                })
-                .catch(err => {
-                    console.log('[TopLikers] Could not load settings, using defaults');
-                    updateLeaderboard();
-                });
+                }, 1000);
+            }
+        });
+
+        async function pulseHeartIcons() {
+            while (true) {
+                await new Promise(r => setTimeout(r, 5000));
+
+                if (settings && settings.topliker_pulseHeartSymbol === false) continue;
+
+                let heartIcons = $(".heartIcon");
+
+                async function doPulse(elem) {
+                    $(elem).addClass("pulse");
+                    await new Promise(r => setTimeout(r, 1000));
+                    $(elem).removeClass("pulse");
+                }
+
+                for (let i = 0; i < heartIcons.length; i++) {
+                    doPulse(heartIcons[i]);
+                    await new Promise(r => setTimeout(r, 300));
+                }
+            }
         }
-        
-        // Start when page loads
-        window.addEventListener('load', init);
-        
-        // Handle preview mode
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('preview') === '1') {
-            // Show sample data in preview mode
-            topLikers = [
-                { userId: '1', nickname: 'TopFan123', username: 'TopFan123', totalAmount: 15420, profilePictureUrl: '' },
-                { userId: '2', nickname: 'LikeMaster', username: 'LikeMaster', totalAmount: 12350, profilePictureUrl: '' },
-                { userId: '3', nickname: 'HeartCollector', username: 'HeartCollector', totalAmount: 9876, profilePictureUrl: '' },
-                { userId: '4', nickname: 'Fan4Life', username: 'Fan4Life', totalAmount: 7654, profilePictureUrl: '' },
-                { userId: '5', nickname: 'LikerPro', username: 'LikerPro', totalAmount: 5432, profilePictureUrl: '' }
-            ].map((user, index) => ({...user, rank: index + 1}));
-            
-            updateLeaderboard();
-        }
+
+        pulseHeartIcons();
+
+        // Add message listener for preview trigger
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'framePreviewPing') {
+                if (typeof window.preview === 'function') {
+                    window.preview();
+                }
+            }
+        });
     </script>
 </body>
 </html>

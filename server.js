@@ -29,6 +29,7 @@ const storage = {
         winGoal: new Set(),
         topGift: new Set(),
         topStreak: new Set(),
+        topLikers: new Set(),
         giftVsGift: new Set(),
         // New: Minigame rectangle overlay (triggers grid)
         minigameRect: new Set()
@@ -44,10 +45,29 @@ const storage = {
         spotifyQueue: [],
         likeGoal: { current: 0, goal: 100 },
         followGoal: { current: 0, goal: 50 },
-        winGoal: { current: 0, total: 5, style: null },
+        winGoal: (() => {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const winGoalFilePath = path.join(__dirname, '..', 'wingoal.json');
+                
+                if (fs.existsSync(winGoalFilePath)) {
+                    const winGoalData = JSON.parse(fs.readFileSync(winGoalFilePath, 'utf8'));
+                    return {
+                        current: winGoalData.current || 0,
+                        total: winGoalData.total || 5,
+                        style: winGoalData.style || null
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading win goal state from file, using default:', error);
+            }
+            return { current: 0, total: 5, style: null };
+        })(),
         timer: { remaining: 0, isRunning: false },
         topGift: { topGifter: null, gifts: [] },
         topStreak: { topStreaker: null, streaks: [] },
+        topLikers: { topLikers: [] },
         topGiftSettings: {
             fontFamily: 'Comic Sans MS',
             fontSize: 22,
@@ -251,6 +271,33 @@ app.post('/event/like', (req, res) => {
     const likeCount = likeData.likeCount || likeData.count || 1;
     storage.state.likeGoal.current = (storage.state.likeGoal.current || 0) + likeCount;
     
+    // Track individual user likes for top likers
+    if (!storage.state.topLikers) {
+        storage.state.topLikers = { topLikers: [] };
+    }
+    
+    const userId = likeData.uniqueId || likeData.nickname || 'anonymous';
+    const userIndex = storage.state.topLikers.topLikers.findIndex(user => user.userId === userId);
+    
+    if (userIndex !== -1) {
+        // User already exists, update their like count
+        storage.state.topLikers.topLikers[userIndex].totalAmount += likeCount;
+        storage.state.topLikers.topLikers[userIndex].lastSeen = Date.now();
+    } else {
+        // New user, add them to the list
+        storage.state.topLikers.topLikers.push({
+            userId: userId,
+            username: likeData.nickname || likeData.uniqueId || 'Anonymous',
+            totalAmount: likeCount,
+            profilePictureUrl: likeData.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userId)}&background=444&color=fff`,
+            lastSeen: Date.now()
+        });
+    }
+    
+    // Sort users by total likes and keep top 10
+    storage.state.topLikers.topLikers.sort((a, b) => b.totalAmount - a.totalAmount);
+    storage.state.topLikers.topLikers = storage.state.topLikers.topLikers.slice(0, 10);
+    
     // Broadcast to like goal overlay with expected format
     broadcast('likeGoal', { 
         type: 'update', 
@@ -260,6 +307,9 @@ app.post('/event/like', (req, res) => {
             ...likeData 
         } 
     });
+    
+    // Broadcast updated top likers to the overlay
+    broadcast('topLikers', { type: 'toplikers_update', users: storage.state.topLikers.topLikers });
     
     broadcastAll({ type: 'tiktok-event', event: { type: 'like', ...likeData } });
     
@@ -519,6 +569,18 @@ app.get('/api/update-wingoal', (req, res) => {
 
 app.post('/overlay/wingoal/update', (req, res) => {
     storage.state.winGoal = req.body;
+    
+    // Save win goal state to file for persistence
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const winGoalFilePath = path.join(__dirname, '..', 'wingoal.json');
+        
+        fs.writeFileSync(winGoalFilePath, JSON.stringify(req.body, null, 2));
+    } catch (error) {
+        console.error('Error saving win goal state to file:', error);
+    }
+    
     broadcast('winGoal', { type: 'win-goal-update', ...req.body });
     res.json({ success: true, message: 'Win goal updated' });
 });
@@ -542,6 +604,16 @@ app.post('/overlay/topstreak/update', (req, res) => {
     storage.state.topStreak = req.body;
     broadcast('topStreak', { type: 'top-streak-update', ...req.body });
     res.json({ success: true, message: 'Top streak updated' });
+});
+
+// Top Likers
+app.post('/overlay/toplikers/update', (req, res) => {
+    const { users } = req.body;
+    if (users) {
+        storage.state.topLikers.topLikers = users;
+        broadcast('topLikers', { type: 'toplikers_update', users: users });
+    }
+    res.json({ success: true, message: 'Top likers updated' });
 });
 
 // Gift vs Gift
@@ -819,6 +891,8 @@ wss.on('connection', (ws, req) => {
         overlayType = 'topGift';
     } else if (path.includes('/top-streak') || path.includes('/topstreak')) {
         overlayType = 'topStreak';
+    } else if (path.includes('/top-likers') || path.includes('/toplikers')) {
+        overlayType = 'topLikers';
     } else if (path.includes('/giftvsgift') || path.includes('/gift-vs-gift')) {
         overlayType = 'giftVsGift';
     } else if (path.includes('/minigame-rect')) {
@@ -1019,6 +1093,7 @@ app.use((req, res) => {
             "POST /overlay/timer/update",
             "POST /overlay/topgift/update",
             "POST /overlay/topstreak/update",
+            "POST /overlay/toplikers/update",
             "POST /overlay/giftvsgift/update",
             "GET /api/giftvsgift",
             "POST /api/giftvsgift",
@@ -1034,6 +1109,7 @@ app.use((req, res) => {
             "WebSocket: /ws/win-goal",
             "WebSocket: /ws/topgift",
             "WebSocket: /ws/topstreak",
+            "WebSocket: /ws/toplikers",
             "WebSocket: /ws/giftvsgift"
         ]
     });
