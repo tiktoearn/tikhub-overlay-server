@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Likers Overlay - TikHub</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+        
+        #toplikers-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            font-family: Arial;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        #title {
+            text-align: center;
+            padding: 10px;
+            font-size: 24px;
+            color: #ffffff;
+            font-weight: bold;
+            text-shadow: 1px 1px 1px #000000;
+        }
+        
+        #rankingContainer {
+            width: 100%;
+            height: calc(100% - 60px);
+            overflow: hidden;
+            overflow-y: auto;
+        }
+        
+        .rankUser {
+            margin: 3px 0;
+            padding: 3px 5px;
+            border-radius: 5px;
+            background-color: rgba(33, 33, 33, 0.4);
+        }
+        
+        .rankUser table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .rankId {
+            font-size: 1.3em;
+            font-weight: bold;
+            width: 30px;
+            text-align: center;
+            color: #ffffff;
+        }
+        
+        .profilePicture {
+            height: 50px;
+            width: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .username {
+            font-weight: bold;
+            color: #ffffff;
+            padding-left: 5px;
+            padding-right: 5px;
+            text-shadow: 1px 1px 1px #000000;
+        }
+        
+        .points {
+            padding-left: 10px;
+            padding-right: 5px;
+            color: #ffffff;
+            text-shadow: 1px 1px 1px #000000;
+        }
+        
+        .firstPlace {
+            background-color: #ffcf208c !important;
+            border-radius: 25px;
+        }
+        
+        .secondPlace {
+            background-color: #b2b2b28c !important;
+            border-radius: 25px;
+        }
+        
+        .thirdPlace {
+            background-color: #ff9c218c !important;
+            border-radius: 25px;
+        }
+        
+        .crown1 {
+            position: absolute;
+            height: 45px;
+            margin-top: -27px;
+            margin-left: 2px;
+            display: block;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes countUp {
+            0% { transform: scale(1); }
+            20% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1s;
+        }
+        
+        .countUp {
+            animation: countUp 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div id="toplikers-overlay">
+        <div id="title">Top Likers</div>
+        <div id="rankingContainer"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/topstreak` : 'wss://overlay.tikhub.site/ws/topstreak';
+        
+        let ws = null;
+        let topLikers = [];
+        let lastActivity = {};
+        const maxUsers = 10;
+        
+        // Default settings
+        const defaultSettings = {
+            title: 'Top Likers',
+            titleSize: 24,
+            titleColor: '#ffffff',
+            usernameColor: '#ffffff',
+            rankColor: '#ffffff',
+            pointsColor: '#ffffff',
+            backgroundColor: 'transparent',
+            showRank: true,
+            showLikes: true,
+            showCrown: true,
+            crownSize: 45,
+            maxUsers: 10,
+            enableBorder: false,
+            borderColor: '#000000',
+            rightToLeft: false,
+            pulseAnimation: true
+        };
+        
+        let settings = {...defaultSettings};
+        
+        // Get profile picture with fallback
+        function getProfilePicture(user) {
+            return user.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || user.username)}&background=random&color=fff`;
+        }
+        
+        // Get crown class based on rank
+        function getCrownClass(rank) {
+            if (!settings.showCrown) return '';
+            if (rank === 1) return 'firstPlace';
+            if (rank === 2) return 'secondPlace';
+            if (rank === 3) return 'thirdPlace';
+            return '';
+        }
+        
+        // Handle pulse animation
+        function shouldPulse(userId) {
+            if (!settings.pulseAnimation) return false;
+            const lastActivityTime = lastActivity[userId];
+            return lastActivityTime && (Date.now() - lastActivityTime) < 10000;
+        }
+        
+        // Update the leaderboard display
+        function updateLeaderboard() {
+            const container = document.getElementById('rankingContainer');
+            const title = document.getElementById('title');
+            
+            // Update title
+            title.textContent = settings.title;
+            title.style.fontSize = `${settings.titleSize}px`;
+            title.style.color = settings.titleColor;
+            title.style.textShadow = settings.enableBorder ? `1px 1px 1px ${settings.borderColor}` : 'none';
+            
+            // Update container direction
+            container.style.direction = settings.rightToLeft ? 'rtl' : 'ltr';
+            
+            // Clear container
+            container.innerHTML = '';
+            
+            // Add users
+            topLikers.slice(0, settings.maxUsers).forEach((user, index) => {
+                const rank = index + 1;
+                const userDiv = document.createElement('div');
+                userDiv.className = `rankUser ${getCrownClass(rank)}`;
+                userDiv.style.animation = shouldPulse(user.userId) ? 'pulse 1s' : 'none';
+                
+                userDiv.innerHTML = `
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td class="rankId" style="display: ${settings.showRank ? 'table-cell' : 'none'}; color: ${settings.rankColor}; direction: ltr;">
+                                    ${rank}.
+                                </td>
+                                <td style="width: 50px; padding: 0 3px;">
+                                    ${settings.showCrown && rank === 1 ? 
+                                        `<img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8545008005009041209.png~tplv-obj.webp" class="crown1" style="height: ${settings.crownSize}px; margin-top: -27px; margin-left: 2px; display: block;">` : 
+                                        ''
+                                    }
+                                    <img src="${getProfilePicture(user)}" class="profilePicture" 
+                                         onerror="this.src='https://ui-avatars.com/api/?name=Unknown&background=444&color=fff'">
+                                </td>
+                                <td style="vertical-align: top;">
+                                    <table style="width: 100%">
+                                        <tbody>
+                                            <tr>
+                                                <td></td>
+                                                <td>
+                                                    <div class="username" style="color: ${settings.usernameColor}; text-shadow: ${settings.enableBorder ? `1px 1px 1px ${settings.borderColor}` : 'none'}">
+                                                        ${user.nickname || user.username}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="points" style="color: ${settings.pointsColor}; display: ${settings.showLikes ? 'block' : 'none'}; text-shadow: ${settings.enableBorder ? `1px 1px 1px ${settings.borderColor}` : 'none'}">
+                                        <span class="${shouldPulse(user.userId) ? 'countUp' : ''}">
+                                            ${user.totalAmount?.toLocaleString() || user.likeCount?.toLocaleString() || '0'} Likes
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+                
+                container.appendChild(userDiv);
+            });
+        }
+        
+        // WebSocket connection
+        function connectWebSocket() {
+            try {
+                console.log('[TopLikers] Connecting to WebSocket:', wsUrl);
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    console.log('✅ [TopLikers] Connected to overlay WebSocket');
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('[TopLikers] Received WebSocket message:', data);
+                        
+                        // Handle different message types
+                        if ((data.type === 'toplikers_update' || data.type === 'topstreak_update') && data.users) {
+                            // Update the leaderboard
+                            topLikers = [...data.users]
+                                .sort((a, b) => (b.totalAmount || b.likeCount || 0) - (a.totalAmount || a.likeCount || 0))
+                                .map((user, index) => ({
+                                    ...user,
+                                    rank: index + 1
+                                }));
+                            
+                            // Update last activity for animation
+                            topLikers.forEach(user => {
+                                const amount = user.totalAmount || user.likeCount || 0;
+                                const prevAmount = lastActivity[user.userId];
+                                if (prevAmount !== amount) {
+                                    lastActivity[user.userId] = Date.now();
+                                }
+                            });
+                            
+                            updateLeaderboard();
+                            
+                        } else if (data.type === 'topstreak_update' && data.topUsers) {
+                            // Handle topstreak format
+                            topLikers = [...data.topUsers]
+                                .sort((a, b) => (b.totalAmount || b.likeCount || 0) - (a.totalAmount || a.likeCount || 0))
+                                .map((user, index) => ({
+                                    ...user,
+                                    userId: user.userId || user.id || user.nickname,
+                                    totalAmount: user.totalAmount || user.likeCount || 0,
+                                    rank: index + 1
+                                }));
+                            
+                            // Update last activity for animation
+                            topLikers.forEach(user => {
+                                const amount = user.totalAmount || user.likeCount || 0;
+                                const prevAmount = lastActivity[user.userId];
+                                if (prevAmount !== amount) {
+                                    lastActivity[user.userId] = Date.now();
+                                }
+                            });
+                            
+                            updateLeaderboard();
+                            
+                        } else if (data.type === 'topstreak-settings-update' && data.settings) {
+                            // Update settings
+                            settings = {...defaultSettings, ...data.settings};
+                            updateLeaderboard();
+                        }
+                    } catch (err) {
+                        console.error('[TopLikers] Error parsing WebSocket data:', err);
+                    }
+                };
+                
+                ws.onclose = () => {
+                    console.log('[TopLikers] Disconnected from overlay WebSocket');
+                    // Attempt to reconnect after 3 seconds
+                    setTimeout(connectWebSocket, 3000);
+                };
+                
+                ws.onerror = (err) => {
+                    console.error('[TopLikers] WebSocket error:', err);
+                };
+                
+            } catch (err) {
+                console.error('[TopLikers] Failed to create WebSocket connection:', err);
+            }
+        }
+        
+        // Initialize
+        function init() {
+            // Set background
+            document.getElementById('toplikers-overlay').style.background = settings.backgroundColor;
+            
+            // Connect to WebSocket
+            connectWebSocket();
+            
+            // Load settings from API if available
+            fetch('/api/topstreak-settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.settings) {
+                        settings = {...defaultSettings, ...data.settings};
+                        updateLeaderboard();
+                    }
+                })
+                .catch(err => {
+                    console.log('[TopLikers] Could not load settings, using defaults');
+                    updateLeaderboard();
+                });
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', init);
+        
+        // Handle preview mode
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('preview') === '1') {
+            // Show sample data in preview mode
+            topLikers = [
+                { userId: '1', nickname: 'TopFan123', username: 'TopFan123', totalAmount: 15420, profilePictureUrl: '' },
+                { userId: '2', nickname: 'LikeMaster', username: 'LikeMaster', totalAmount: 12350, profilePictureUrl: '' },
+                { userId: '3', nickname: 'HeartCollector', username: 'HeartCollector', totalAmount: 9876, profilePictureUrl: '' },
+                { userId: '4', nickname: 'Fan4Life', username: 'Fan4Life', totalAmount: 7654, profilePictureUrl: '' },
+                { userId: '5', nickname: 'LikerPro', username: 'LikerPro', totalAmount: 5432, profilePictureUrl: '' }
+            ].map((user, index) => ({...user, rank: index + 1}));
+            
+            updateLeaderboard();
+        }
+    </script>
+</body>
+</html>
