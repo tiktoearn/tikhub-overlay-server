@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Like Goal Overlay</title>
+    <meta name="viewport" content="width=900, initial-scale=1.0">
+    <style>
+        html,
+        body {
+            width: 900px;
+            height: 120px;
+            margin: 0;
+            padding: 0;
+            background: transparent !important;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .goal-container {
+            width: 900px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            box-sizing: border-box;
+            position: relative;
+            background: none !important;
+
+            /* CSS Variables for Themes */
+            --bg-color: #1a1a2e;
+            --fill-gradient: linear-gradient(90deg, #ff4d6d, #ff758c, #ff9a9e);
+            --icon-color: #ff4d6d;
+            --icon-shadow: #ff4d6d99;
+            --goal-glow: linear-gradient(90deg, #ffd700, #ffec5c, #ffd700);
+            --goal-shadow: #ffd700;
+            --border-style: none;
+            --label-color: #fff;
+            --text-shadow: 0 2px 10px #0008;
+            --icon-emoji: '❤️';
+        }
+
+        /* --- THEME PRESETS --- */
+        .goal-container.theme-cyberpunk {
+            --bg-color: #0b0c10;
+            --fill-gradient: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe);
+            --icon-color: #00f2fe;
+            --icon-shadow: #00f2fe99;
+            --border-style: 2px solid #00f2fe;
+            --goal-glow: linear-gradient(90deg, #f857a6, #ff5858, #f857a6);
+            --goal-shadow: #f857a6;
+            --icon-emoji: '⚡';
+        }
+
+        .goal-container.theme-pure {
+            --bg-color: rgba(255, 255, 255, 0.95);
+            --fill-gradient: linear-gradient(90deg, #444, #666, #444);
+            --icon-color: #e74c3c;
+            --icon-shadow: transparent;
+            --border-style: 2px solid #e0e0e0;
+            --label-color: #333;
+            --text-shadow: none;
+            --goal-glow: linear-gradient(90deg, #27ae60, #2ecc71, #27ae60);
+            --goal-shadow: #27ae60;
+        }
+
+        .goal-container.theme-aurous {
+            --bg-color: #111;
+            --fill-gradient: linear-gradient(90deg, #b8860b, #ffd700, #b8860b);
+            --icon-color: #ffd700;
+            --icon-shadow: #ffd70099;
+            --border-style: 1px solid #4a3b00;
+            --goal-glow: linear-gradient(90deg, #fff, #ddd, #fff);
+            --goal-shadow: #ffffff;
+            --icon-emoji: '✨';
+        }
+
+        .goal-container.theme-toxic {
+            --bg-color: #0a110a;
+            --fill-gradient: linear-gradient(90deg, #00b09b, #96c93d, #00b09b);
+            --icon-color: #96c93d;
+            --icon-shadow: #96c93d99;
+            --border-style: 1px dashed #96c93d;
+            --goal-glow: linear-gradient(90deg, #f12711, #f5af19, #f12711);
+            --goal-shadow: #f12711;
+            --icon-emoji: '☣️';
+        }
+
+        /* Heart icon */
+        .icon {
+            width: 64px;
+            height: 64px;
+            margin-right: 24px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: var(--icon-color);
+            filter: drop-shadow(0 0 10px var(--icon-shadow));
+            animation: heartBeat 1.8s ease-in-out infinite;
+        }
+
+        .icon::before {
+            content: var(--icon-emoji);
+        }
+
+        @keyframes heartBeat {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            14% {
+                transform: scale(1.15);
+            }
+
+            28% {
+                transform: scale(1);
+            }
+
+            42% {
+                transform: scale(1.1);
+            }
+
+            56% {
+                transform: scale(1);
+            }
+        }
+
+        /* Progress bar track */
+        .progress-bar-bg {
+            flex: 1;
+            height: 52px;
+            background: var(--bg-color);
+            border: var(--border-style);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            box-shadow: inset 0 2px 8px #0006;
+        }
+
+        /* Animated fill */
+        .progress-bar-fill {
+            background: var(--fill-gradient);
+            height: 100%;
+            border-radius: 14px 0 0 14px;
+            transition: width 0.6s cubic-bezier(.4, 2, .3, 1);
+            position: relative;
+            overflow: hidden;
+            min-width: 0%;
+        }
+
+        /* Shimmer effect on fill */
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -60%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -60%;
+            }
+
+            100% {
+                left: 120%;
+            }
+        }
+
+        /* Wave effect */
+        .wave {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 200%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg width="200" height="52" viewBox="0 0 200 52" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 26 Q 25 0 50 26 T 100 26 T 150 26 T 200 26 V52 H0Z" fill="%23fff" fill-opacity="0.12"/></svg>');
+            background-size: 100px 52px;
+            animation: waveMove 2s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes waveMove {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100px);
+            }
+        }
+
+        /* Centered label on the bar */
+        .progress-label {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: var(--label-color);
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-shadow: var(--text-shadow);
+            z-index: 2;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* Animations triggered by events */
+        .shake {
+            animation: shake 0.5s ease-in-out 3;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            15% {
+                transform: translate(-3px, -2px) rotate(-1deg);
+            }
+
+            30% {
+                transform: translate(3px, 2px) rotate(1deg);
+            }
+
+            45% {
+                transform: translate(-3px, 1px) rotate(0deg);
+            }
+
+            60% {
+                transform: translate(3px, -1px) rotate(1deg);
+            }
+
+            75% {
+                transform: translate(-2px, 2px) rotate(-1deg);
+            }
+
+            90% {
+                transform: translate(2px, -2px) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        .flip {
+            animation: flipIn 0.7s ease-in-out;
+        }
+
+        @keyframes flipIn {
+            0% {
+                transform: rotateX(0deg);
+            }
+
+            50% {
+                transform: rotateX(90deg);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: rotateX(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Goal reached glow pulse */
+        .goal-reached .progress-bar-fill {
+            background: var(--goal-glow);
+            animation: goalGlow 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes goalGlow {
+            from {
+                box-shadow: 0 0 10px var(--goal-shadow);
+                opacity: 0.9;
+            }
+
+            to {
+                box-shadow: 0 0 30px var(--goal-shadow), 0 0 60px var(--goal-shadow);
+                opacity: 1;
+            }
+        }
+
+        /* Hidden state */
+        .goal-container.hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="goal-container" id="goalContainer">
+        <div class="icon" id="goalIcon"></div>
+        <div class="progress-bar-bg" id="progressBg">
+            <div class="progress-bar-fill" id="progressFill" style="width: 0%">
+                <div class="wave"></div>
+            </div>
+            <div class="progress-label" id="progressLabel">Like Goal — 0 / 100</div>
+        </div>
+    </div>
+
+    <script>
+        // ─── State ────────────────────────────────────────────────────────────────
+        let GOAL = 100;
+        let currentLikes = 0;
+        let goalName = 'Like Goal';
+        let isActivated = true;
+        let lastPercent = 0;
+        let lastGoalValue = 100;
+        let ws = null;
+        let reconnectCount = 0;
+        const MAX_RECONNECT = 20;
+
+        // Displayed (animated) like count
+        let displayedLikes = 0;
+        let countInterval = null;
+
+        // ─── DOM References ───────────────────────────────────────────────────────
+        const container = document.getElementById('goalContainer');
+        const fill = document.getElementById('progressFill');
+        const label = document.getElementById('progressLabel');
+        const iconEl = document.getElementById('goalIcon');
+
+        // ─── Visibility ──────────────────────────────────────────────────────────
+        function updateVisibility() {
+            if (isActivated) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // ─── Animated counter (counts up like TikFinity) ─────────────────────────
+        function animateCountTo(target) {
+            if (countInterval) clearInterval(countInterval);
+            if (target <= displayedLikes) {
+                displayedLikes = target;
+                refreshLabel();
+                return;
+            }
+            const steps = 25;
+            const step = Math.ceil((target - displayedLikes) / steps);
+            countInterval = setInterval(() => {
+                displayedLikes += step;
+                if (displayedLikes >= target) {
+                    displayedLikes = target;
+                    clearInterval(countInterval);
+                }
+                refreshLabel();
+            }, 40);
+        }
+
+        // ─── Label refresh ───────────────────────────────────────────────────────
+        function refreshLabel() {
+            const pct = Math.min(100, Math.round((displayedLikes / GOAL) * 100));
+            label.textContent = `${goalName} — ${displayedLikes.toLocaleString()} / ${GOAL.toLocaleString()} (${pct}%)`;
+        }
+
+        // ─── Set likes & update bar ───────────────────────────────────────────────
+        function setLikes(count) {
+            if (!isActivated) return;
+
+            const prevLikes = currentLikes;
+            const prevPercent = lastPercent;
+            currentLikes = count;
+
+            const pct = Math.min(100, Math.round((currentLikes / GOAL) * 100));
+
+            // Animate progress bar fill
+            fill.style.width = pct + '%';
+
+            // Animate the number counter
+            animateCountTo(currentLikes);
+
+            // Shake on big jump or hitting goal
+            const bigJump = pct > prevPercent + 40;
+            const hitGoal = prevLikes < GOAL && currentLikes >= GOAL;
+
+            if (hitGoal || bigJump) {
+                container.classList.add('shake');
+                setTimeout(() => container.classList.remove('shake'), 1600);
+            }
+
+            // Gold pulse when goal reached
+            if (hitGoal) {
+                container.classList.add('goal-reached');
+                sendGoalCompletion();
+            } else if (pct < 100) {
+                container.classList.remove('goal-reached');
+            }
+
+            lastPercent = pct;
+        }
+
+        // ─── Goal completion event ────────────────────────────────────────────────
+        function sendGoalCompletion() {
+            const evt = {
+                type: 'goal-completed',
+                goalType: 'like',
+                count: currentLikes,
+                goal: GOAL,
+                whenReached: window.whenReached || 'keep',
+                actionOnFinish: window.actionOnFinish || ''
+            };
+            if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(evt));
+            window.parent.postMessage(evt, '*');
+        }
+
+        // ─── Apply settings from payload ─────────────────────────────────────────
+        function applySettings(payload) {
+            if (payload.goal !== undefined) { GOAL = payload.goal; lastGoalValue = GOAL; }
+            if (payload.name !== undefined) { goalName = payload.name; }
+            if (payload.activate !== undefined) { isActivated = payload.activate; updateVisibility(); }
+            if (payload.whenReached !== undefined) { window.whenReached = payload.whenReached; }
+            if (payload.actionOnFinish !== undefined) { window.actionOnFinish = payload.actionOnFinish; }
+
+            // Style overrides
+            if (payload.barColor) fill.style.background = payload.barColor;
+            if (payload.bgColor) document.getElementById('progressBg').style.background = payload.bgColor;
+            if (payload.textColor) label.style.color = payload.textColor;
+            if (payload.font) label.style.fontFamily = payload.font;
+            if (payload.fontSize) label.style.fontSize = payload.fontSize + 'px';
+            if (payload.fontSpacing !== undefined) label.style.letterSpacing = payload.fontSpacing + 'px';
+            if (payload.enableFontBorder) {
+                label.style.textShadow = `0 0 6px ${payload.borderColor || '#000'}`;
+            }
+
+            if (payload.theme) {
+                container.className = `goal-container ${isActivated ? '' : 'hidden'} theme-${payload.theme}`;
+            }
+
+            if (payload.count !== undefined) {
+                setLikes(payload.count);
+            } else {
+                setLikes(currentLikes); // refresh display with new goal
+            }
+        }
+
+        // ─── Handle incoming WS / postMessage ────────────────────────────────────
+        function handleMessage(msg) {
+            // initial-state from server on connect
+            if (msg.type === 'initial-state' && msg.state) {
+                if (msg.state.current !== undefined) currentLikes = msg.state.current;
+                if (msg.state.goal !== undefined) GOAL = msg.state.goal;
+                setLikes(currentLikes);
+                return;
+            }
+
+            // like-goal-update — live update from server
+            if (msg.type === 'like-goal-update') {
+                if (msg.goal !== undefined) GOAL = msg.goal;
+                if (msg.current !== undefined) setLikes(msg.current);
+                return;
+            }
+
+            // settings update payload
+            if (msg.type === 'update' && msg.payload) {
+                applySettings(msg.payload);
+                return;
+            }
+
+            // flip animation when goal target changes
+            if (msg.type === 'goal-value-change') {
+                container.classList.add('flip');
+                setTimeout(() => container.classList.remove('flip'), 700);
+                if (msg.newGoal) GOAL = msg.newGoal;
+                setLikes(currentLikes);
+                return;
+            }
+
+            if (msg.type === 'test') { runTest(); return; }
+            if (msg.type === 'cut' || msg.type === 'reset-count') { setLikes(0); return; }
+            if (msg.type === 'update-goal') { GOAL = msg.newGoal || msg.goal || GOAL; setLikes(currentLikes); return; }
+        }
+
+        // ─── Test animation ───────────────────────────────────────────────────────
+        function runTest() {
+            const origLikes = currentLikes;
+            const origGoal = GOAL;
+            const origActive = isActivated;
+
+            isActivated = true;
+            updateVisibility();
+
+            // Ramp up to 100%
+            let fake = 0;
+            const step = () => {
+                if (fake <= GOAL) {
+                    setLikes(fake);
+                    fake += Math.ceil(GOAL / 50);
+                    setTimeout(step, 30);
+                } else {
+                    setLikes(GOAL);
+                    setTimeout(() => {
+                        setLikes(origLikes);
+                        isActivated = origActive;
+                        updateVisibility();
+                    }, 1200);
+                }
+            };
+            step();
+        }
+
+        // ─── WebSocket connection ─────────────────────────────────────────────────
+        function connectWebSocket() {
+            if (ws && ws.readyState !== WebSocket.CLOSED) ws.close();
+
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${location.host}/ws/like-goal`);
+
+            ws.onopen = () => {
+                console.log('[Like Goal] WebSocket connected');
+                reconnectCount = 0;
+                // Server sends initial-state immediately — no REST fetch needed
+            };
+
+            ws.onmessage = (e) => {
+                try { handleMessage(JSON.parse(e.data)); } catch (err) { console.error('[Like Goal] Parse error:', err); }
+            };
+
+            ws.onerror = (e) => console.error('[Like Goal] WS error:', e);
+
+            ws.onclose = () => {
+                console.log('[Like Goal] Disconnected — reconnecting in 3s…');
+                if (reconnectCount < MAX_RECONNECT) {
+                    reconnectCount++;
+                    setTimeout(connectWebSocket, 3000);
+                }
+            };
+        }
+
+        // ─── postMessage bridge (from app iframe) ─────────────────────────────────
+        window.addEventListener('message', (e) => {
+            if (e.data && typeof e.data === 'object') handleMessage(e.data);
+        });
+
+        // ─── Boot ─────────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', connectWebSocket);
+        if (document.readyState !== 'loading') connectWebSocket();
+    </script>
+</body>
+
+</html>
