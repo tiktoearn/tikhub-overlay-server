@@ -108,6 +108,24 @@ const storage = {
             giftImageVisible: true,
             giftImageOpacity: 100
         },
+        topLikerSettings: {
+            fontFamily: 'Segoe UI',
+            fontSize: 14,
+            title: 'TOP LIKERS',
+            titleSize: 18,
+            titleColor: '#ffffff',
+            usernameColor: '#ffffff',
+            pointsColor: '#ffffff',
+            borderColor: '#000000',
+            backgroundColor: 'rgba(33,33,33,0.4)',
+            showRank: true,
+            showLikes: true,
+            showCrown: true,
+            showHeartSymbol: true,
+            pulseHeartSymbol: true,
+            enableBorder: false,
+            maxUsers: 10
+        },
         giftVsGift: { team1: { name: 'Team 1', score: 0 }, team2: { name: 'Team 2', score: 0 } },
         chatOverlaySettings: null,
         // New: current state for minigame rectangle overlay
@@ -733,6 +751,23 @@ app.post('/api/topstreak-settings', (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error('[Overlay Server] Failed to save top streak settings:', error);
+        res.status(500).json({ success: false, error: 'Failed to save settings' });
+    }
+});
+
+// Top Liker settings API
+app.get('/api/topliker-settings', (_req, res) => {
+    res.json({ success: true, settings: storage.state.topLikerSettings });
+});
+
+app.post('/api/topliker-settings', (req, res) => {
+    try {
+        storage.state.topLikerSettings = { ...storage.state.topLikerSettings, ...req.body };
+        broadcast('topLikers', { type: 'topliker-settings-update', settings: storage.state.topLikerSettings });
+        console.log('[Overlay Server] Top liker settings updated and broadcasted');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Overlay Server] Failed to save top liker settings:', error);
         res.status(500).json({ success: false, error: 'Failed to save settings' });
     }
 });

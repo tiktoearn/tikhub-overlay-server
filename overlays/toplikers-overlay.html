@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    
+
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -25,6 +26,15 @@
             overflow-y: hidden;
             overflow-wrap: break-word;
             width: fit-content;
+            /* Hidden by default — shown when real data arrives */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+
+        #rankingContainer.tl-visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .rankUser {
@@ -165,37 +175,43 @@
         }
     </style>
 </head>
+
 <body>
     <pre id="error"></pre>
 
     <div id="rankingContainer">
         <div class="rankUser">
             <table>
-                <tbody><tr>
-                    <td class="rankId">
-                        1.
-                    </td>
-                    <td>
-                        <img src="images/gold_crown.svg" class="crown1" style="display: none;">
-                        <img style="height: 50px; width: 50px;" class="profilePicture" onerror="this.src='https://ui-avatars.com/api/?name=Unknown&background=444&color=fff'">
-                    </td>
-                    <td>
-                        <table>
-                            <tbody><tr>
-                                <td>
+                <tbody>
+                    <tr>
+                        <td class="rankId">
+                            1.
+                        </td>
+                        <td>
+                            <img src="images/gold_crown.svg" class="crown1" style="display: none;">
+                            <img style="height: 50px; width: 50px;" class="profilePicture"
+                                onerror="this.src='https://ui-avatars.com/api/?name=Unknown&background=444&color=fff'">
+                        </td>
+                        <td>
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td>
 
-                                </td>
-                                <td>
-                                    <div class="username">Testuser</div>
-                                </td>
-                            </tr>
-                        </tbody></table>
+                                        </td>
+                                        <td>
+                                            <div class="username">Testuser</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                        <div class="points"></div>
+                            <div class="points"></div>
 
-                    </td>
-                </tr>
-            </tbody></table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -208,6 +224,8 @@
         var userLastValues = {};
         var userPlaces = {};
         var lastLikeActivity = {};
+        var hasRealData = false;   // true once the first real WebSocket data arrives
+        var isPreviewMode = false; // set on load
         var settings = {
             topliker_usernameColor: '#ffffff',
             topliker_rankColor: '#ffffff',
@@ -313,7 +331,7 @@
                 user.totalAmount = parseFloat(user.totalAmount);
 
                 thisItem.find(".profilePicture").attr("src", user.profilePictureUrl || nothumb);
-                
+
                 // Use emoji badges for top 3, numbers for others
                 if (counter === 1) {
                     thisItem.find(".rankId").html('🏆');
@@ -404,8 +422,39 @@
             updateSettings();
         }
 
+        // Show / hide the overlay based on whether there is data to show
+        function setOverlayVisibility(hasUsers) {
+            if (!rankingContainer) return;
+            if (hasUsers) {
+                rankingContainer.addClass('tl-visible');
+            } else if (!isPreviewMode) {
+                // Only hide in live mode; keep preview always visible
+                rankingContainer.removeClass('tl-visible');
+            }
+        }
+
         $(window).on("load", () => {
             $("#error").hide();
+
+            // Determine if we are in preview/iframe mode
+            const urlParams = new URLSearchParams(window.location.search);
+            isPreviewMode = urlParams.get('preview') === '1' || window.self !== window.top;
+
+            // Fetch settings from server first, then apply them
+            const settingsUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? '/api/topliker-settings'
+                : 'https://overlay.tikhub.site/api/topliker-settings';
+
+            fetch(settingsUrl)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.settings) {
+                        console.log('[TopLikers] Loaded settings from server:', data.settings);
+                        settings = { ...settings, ...data.settings };
+                        updateSettings(true);
+                    }
+                })
+                .catch(err => console.warn('[TopLikers] Could not load settings from server:', err));
 
             updateSettings();
 
@@ -419,29 +468,39 @@
             const useLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = useLocal ? `${wsProtocol}//${window.location.host}/ws/toplikers` : 'wss://overlay.tikhub.site/ws/toplikers';
-            
+
             try {
                 const socket = new WebSocket(wsUrl);
-                
+
                 socket.onopen = () => {
                     console.log('✅ [TopLikers] Connected to WebSocket');
                 };
-                
+
                 socket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         console.log('[TopLikers] Received message:', data);
-                        
+
                         if (data.type === 'toplikers_update' && data.users) {
+                            // Mark as real data — overlay becomes visible
+                            hasRealData = true;
                             updateRanking(data.users);
+                            setOverlayVisibility(data.users.length > 0);
                         } else if (data.type === 'topstreak_update' && (data.users || data.topUsers)) {
-                            updateRanking(data.users || data.topUsers);
+                            const users = data.users || data.topUsers;
+                            hasRealData = true;
+                            updateRanking(users);
+                            setOverlayVisibility(users.length > 0);
+                        } else if (data.type === 'topliker-settings-update' && data.settings) {
+                            console.log('[TopLikers] Applying live settings update:', data.settings);
+                            settings = { ...settings, ...data.settings };
+                            updateSettings(true);
                         }
                     } catch (err) {
                         console.error('[TopLikers] Error parsing message:', err);
                     }
                 };
-                
+
                 socket.onclose = () => {
                     console.log('[TopLikers] Disconnected from WebSocket');
                     // Attempt to reconnect after 3 seconds
@@ -449,11 +508,11 @@
                         window.location.reload();
                     }, 3000);
                 };
-                
+
                 socket.onerror = (error) => {
                     console.error('[TopLikers] WebSocket error:', error);
                 };
-                
+
             } catch (err) {
                 console.error('[TopLikers] Failed to create WebSocket connection:', err);
             }
@@ -462,7 +521,7 @@
             let previewIndex = 0;
             let previewEnabled = true;
 
-            // Show sample data initially
+            // Show sample data ONLY in preview/iframe mode (not in live OBS use)
             const sampleData = [
                 { userId: '1', username: 'sampleuser1', nickname: 'Top Fan', totalAmount: 25420, profilePictureUrl: 'https://ui-avatars.com/api/?name=Top+Fan&background=random&color=fff' },
                 { userId: '2', username: 'sampleuser2', nickname: 'Like Master', totalAmount: 18350, profilePictureUrl: 'https://ui-avatars.com/api/?name=Like+Master&background=random&color=fff' },
@@ -475,11 +534,15 @@
                 { userId: '9', username: 'sampleuser9', nickname: 'Active Member', totalAmount: 2456, profilePictureUrl: 'https://ui-avatars.com/api/?name=Active+Member&background=random&color=fff' },
                 { userId: '10', username: 'sampleuser10', nickname: 'Regular Viewer', totalAmount: 1234, profilePictureUrl: 'https://ui-avatars.com/api/?name=Regular+Viewer&background=random&color=fff' }
             ];
-            
-            // Display sample data initially
-            setTimeout(() => {
-                updateRanking(sampleData);
-            }, 1000);
+
+            if (isPreviewMode) {
+                // Only show sample data in preview mode (OBS browser source preview / iframe)
+                setTimeout(() => {
+                    updateRanking(sampleData);
+                    setOverlayVisibility(true);
+                }, 1000);
+            }
+            // In live mode: stay hidden — setOverlayVisibility(true) is called when real WebSocket data arrives
 
             window.preview = function () {
                 if (!previewEnabled) return;
@@ -502,30 +565,27 @@
                 updateRanking(rankingData);
             };
 
-            // Auto-preview in editor/iframe
-            const urlParams = new URLSearchParams(window.location.search);
-            const isPreview = urlParams.get('preview') === '1';
-            
-            if (window.self !== window.top || isPreview) {
+            // Auto-preview in editor/iframe (reuse isPreviewMode set on load)
+            if (isPreviewMode) {
                 console.log('[TopLikers] Preview mode detected');
-                
+
                 // Run preview cycle
                 const previewCycle = () => {
                     if (typeof window.preview === 'function') {
                         window.preview();
                     }
                 };
-                
+
                 // Initial preview
                 setTimeout(previewCycle, 1000);
-                
+
                 // Auto-cycle preview every 5 seconds
                 setInterval(() => {
                     if (previewEnabled) {
                         previewCycle();
                     }
                 }, 5000);
-                
+
                 // Add demo interaction
                 window.addEventListener('message', (event) => {
                     if (event.data && event.data.type === 'toplikers-demo-refresh') {
@@ -560,7 +620,7 @@
         pulseHeartIcons();
 
         // Add message listener for preview trigger
-        window.addEventListener('message', function(event) {
+        window.addEventListener('message', function (event) {
             if (event.data && event.data.type === 'framePreviewPing') {
                 if (typeof window.preview === 'function') {
                     window.preview();
@@ -569,4 +629,5 @@
         });
     </script>
 </body>
+
 </html>
