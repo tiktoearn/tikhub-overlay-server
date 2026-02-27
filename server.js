@@ -985,6 +985,14 @@ wss.on('connection', (ws, req) => {
             } catch (error) {
                 console.error('[Overlay Server] Failed to send top streak settings on connect:', error);
             }
+        } else if (overlayType === 'topLikers') {
+            try {
+                if (storage.state.topLikerSettings) {
+                    ws.send(JSON.stringify({ type: 'topliker-settings-update', settings: storage.state.topLikerSettings }));
+                }
+            } catch (error) {
+                console.error('[Overlay Server] Failed to send top liker settings on connect:', error);
+            }
         }
     }
 

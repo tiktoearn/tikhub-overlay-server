@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,12 +13,14 @@
             font-family: 'Arial', sans-serif;
             overflow: hidden;
         }
+
         .overlay-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             background: transparent;
         }
+
         .gift-overlay {
             position: absolute;
             top: 50%;
@@ -28,6 +31,7 @@
             background: transparent;
             color: #fff;
         }
+
         .gift-image {
             position: absolute;
             top: 0;
@@ -42,6 +46,7 @@
             z-index: 1;
             pointer-events: none;
         }
+
         .title,
         .username,
         .gift-value {
@@ -52,9 +57,22 @@
             text-shadow: 2px 2px 0px #242424;
             z-index: 2;
         }
-        .title { top: 20px; font-size: 18px; }
-        .username { top: 125px; font-size: 32px; }
-        .gift-value { top: 165px; font-size: 22px; }
+
+        .title {
+            top: 20px;
+            font-size: 18px;
+        }
+
+        .username {
+            top: 125px;
+            font-size: 32px;
+        }
+
+        .gift-value {
+            top: 165px;
+            font-size: 22px;
+        }
+
         .connection-status {
             position: absolute;
             top: 50%;
@@ -67,6 +85,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="overlay-container">
         <div class="gift-overlay" id="giftOverlay" style="display: none;">
@@ -156,19 +175,19 @@
             }
 
             async function loadInitialSettings() {
-                if (useLocal) {
-                    try {
-                        const response = await fetch(`${apiBase}/api/topgift-settings`);
-                        const data = await response.json();
-                        if (data?.settings) {
-                            applySettings(data.settings);
-                            return;
-                        }
-                    } catch (error) {
-                        console.warn('[TopGift] Failed to fetch settings from local API:', error);
+                try {
+                    // Always try to fetch from server (works on both localhost and Railway)
+                    const response = await fetch(`${apiBase}/api/topgift-settings`);
+                    const data = await response.json();
+                    if (data?.settings) {
+                        applySettings(data.settings);
+                        return;
                     }
+                } catch (error) {
+                    console.warn('[TopGift] Failed to fetch settings from API, falling back to URL params:', error);
                 }
 
+                // Fallback: read from URL query params
                 const params = new URLSearchParams(window.location.search);
                 const fallback = {
                     title: params.get('title') || settings.title,
@@ -224,8 +243,8 @@
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                if ((data.type === 'gift' || data.type === 'topgift-update') && data.giftData) {
-                    const gift = data.giftData;
+                        if ((data.type === 'gift' || data.type === 'topgift-update') && data.giftData) {
+                            const gift = data.giftData;
                             const giftData = {
                                 username: gift.nickname || gift.username || 'Anonymous',
                                 giftName: gift.giftName || 'Gift',
@@ -270,30 +289,5 @@
         })();
     </script>
 </body>
-</html>
 
-
-            // Apply settings to elements
-            document.getElementById('title').textContent = title;
-            document.getElementById('title').style.fontSize = titleSize + 'px';
-            document.getElementById('username').style.fontSize = usernameSize + 'px';
-            document.getElementById('giftValue').style.fontSize = fontSize + 'px';
-            document.getElementById('title').style.color = titleColor;
-            document.getElementById('username').style.color = usernameColor;
-            document.getElementById('giftValue').style.color = counterColor;
-            
-            // Apply font family to all text elements
-            const textElements = document.querySelectorAll('.title, .username, .gift-value');
-            textElements.forEach(el => {
-                el.style.fontFamily = fontFamily;
-            });
-
-            // Apply gift image opacity
-            document.getElementById('giftImage').style.opacity = giftImageOpacity / 100;
-        }
-
-        // Load settings when page loads
-        loadSettings();
-    </script>
-</body>
 </html>

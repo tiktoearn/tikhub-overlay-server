@@ -156,6 +156,9 @@
         ws.onopen = () => {
           console.log('[Win Goal] WebSocket connected');
           reconnectAttempts = 0;
+          // Do NOT re-fetch from REST API on reconnect.
+          // The server sends an 'initial-state' WS message immediately
+          // on connect, which always has the correct in-memory value.
         };
 
         ws.onmessage = (event) => {
@@ -185,9 +188,9 @@
             reconnectAttempts++;
             reconnectTimeout = setTimeout(connectWebSocket, 3000);
           } else {
-            console.error('[Win Goal] Max reconnection attempts reached, falling back to polling');
-            // Fallback to polling if WebSocket fails
-            setInterval(fetchInitialData, 2000);
+            console.error('[Win Goal] Max reconnection attempts reached');
+            // Fallback: poll every 5s but only if WS truly can't reconnect
+            setInterval(() => fetchInitialData(), 5000);
           }
         };
       } catch (error) {
@@ -200,7 +203,7 @@
       }
     }
 
-    // Fetch initial data and connect WebSocket
+    // Fetch initial data ONCE on first page load, then rely on WebSocket
     fetchInitialData();
     connectWebSocket();
 
