@@ -343,31 +343,38 @@
             }
         }
 
-        // ─── Animated counter (counts up like TikFinity) ─────────────────────────
+        // ─── Label refresh ───────────────────────────────────────────────────────
+        function refreshLabel() {
+            const displayInt = Math.round(displayedLikes);
+            const pct = Math.min(100, Math.round((displayInt / GOAL) * 100));
+            label.textContent = `${goalName} — ${displayInt.toLocaleString()} / ${GOAL.toLocaleString()} (${pct}%)`;
+        }
+
+        // ─── Animated counter (counts up or down smoothly) ───────────
         function animateCountTo(target) {
             if (countInterval) clearInterval(countInterval);
-            if (target <= displayedLikes) {
+            if (Math.round(target) === Math.round(displayedLikes)) {
                 displayedLikes = target;
                 refreshLabel();
                 return;
             }
-            const steps = 25;
-            const step = Math.ceil((target - displayedLikes) / steps);
+
+            const steps = 30; // Number of animation frames
+            const diff = target - displayedLikes;
+            const step = diff / steps;
+
             countInterval = setInterval(() => {
                 displayedLikes += step;
-                if (displayedLikes >= target) {
+
+                // If counting up and passed target, or counting down and passed target
+                if ((step > 0 && displayedLikes >= target) || (step < 0 && displayedLikes <= target)) {
                     displayedLikes = target;
                     clearInterval(countInterval);
                 }
                 refreshLabel();
-            }, 40);
+            }, 30);
         }
 
-        // ─── Label refresh ───────────────────────────────────────────────────────
-        function refreshLabel() {
-            const pct = Math.min(100, Math.round((displayedLikes / GOAL) * 100));
-            label.textContent = `${goalName} — ${displayedLikes.toLocaleString()} / ${GOAL.toLocaleString()} (${pct}%)`;
-        }
 
         // ─── Set likes & update bar ───────────────────────────────────────────────
         function setLikes(count) {
