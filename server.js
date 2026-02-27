@@ -34,7 +34,7 @@ const storage = {
         // New: Minigame rectangle overlay (triggers grid)
         minigameRect: new Set()
     },
-    
+
     // Current state for each overlay type
     state: {
         actions: [],
@@ -50,7 +50,7 @@ const storage = {
                 const fs = require('fs');
                 const path = require('path');
                 const winGoalFilePath = path.join(__dirname, '..', 'wingoal.json');
-                
+
                 if (fs.existsSync(winGoalFilePath)) {
                     const winGoalData = JSON.parse(fs.readFileSync(winGoalFilePath, 'utf8'));
                     return {
@@ -113,7 +113,7 @@ const storage = {
         // New: current state for minigame rectangle overlay
         minigameRect: { triggers: [], config: null }
     },
-    
+
     // Session management
     sessions: new Map() // sessionId -> session data
 };
@@ -157,26 +157,26 @@ app.get('/ping', (req, res) => {
 // TikHub authentication endpoint
 app.post('/tikhub/authenticate', (req, res) => {
     const { appId, secretKey } = req.body;
-    
+
     // Simple authentication (you can enhance this)
     if (appId === 'TikHub-Overlay-Integration') {
         const sessionToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         storage.sessions.set(sessionToken, {
             appId,
             createdAt: Date.now(),
             lastActivity: Date.now()
         });
-        
+
         console.log('✅ TikHub authenticated');
-        
+
         return res.json({
             success: true,
             sessionToken,
             message: 'Authenticated successfully'
         });
     }
-    
+
     res.status(401).json({
         success: false,
         error: 'Invalid credentials'
@@ -187,10 +187,10 @@ app.post('/tikhub/authenticate', (req, res) => {
 function broadcast(clientType, data) {
     const clients = storage.clients[clientType];
     if (!clients) return;
-    
+
     const message = JSON.stringify(data);
     let successCount = 0;
-    
+
     clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             try {
@@ -201,7 +201,7 @@ function broadcast(clientType, data) {
             }
         }
     });
-    
+
     console.log(`📡 Broadcast to ${clientType}: ${successCount}/${clients.size} clients`);
 }
 
@@ -216,69 +216,69 @@ function broadcastAll(data) {
 app.post('/event/gift', (req, res) => {
     const giftData = req.body;
     console.log('🎁 Received gift event:', giftData);
-    
+
     // Broadcast to gift bubble overlays
     broadcast('giftBubbles', { type: 'gift', giftData });
-    
+
     // Broadcast to Gift vs Gift overlay
     broadcast('giftVsGift', { type: 'gift', ...giftData });
-    
+
     // Broadcast to Top Gift overlay
     broadcast('topGift', { type: 'gift', giftData });
-    
+
     // Broadcast to Top Streak overlay
     broadcast('topStreak', { type: 'gift', giftData });
-    
+
     // Also broadcast to general clients
     broadcastAll({ type: 'tiktok-event', event: { type: 'gift', ...giftData } });
-    
+
     res.json({ success: true, message: 'Gift event broadcasted' });
 });
 
 app.post('/event/follow', (req, res) => {
     const followData = req.body;
     console.log('❤️ Received follow event:', followData);
-    
+
     // Update follow goal state
     if (!storage.state.followGoal) {
         storage.state.followGoal = { current: 0, goal: 50 };
     }
     storage.state.followGoal.current = (storage.state.followGoal.current || 0) + 1;
-    
+
     // Broadcast to follow goal overlay with expected format
-    broadcast('followGoal', { 
-        type: 'update', 
-        payload: { 
+    broadcast('followGoal', {
+        type: 'update',
+        payload: {
             type: 'follow',
             count: storage.state.followGoal.current,
-            ...followData 
-        } 
+            ...followData
+        }
     });
-    
+
     broadcastAll({ type: 'tiktok-event', event: { type: 'follow', ...followData } });
-    
+
     res.json({ success: true, message: 'Follow event broadcasted' });
 });
 
 app.post('/event/like', (req, res) => {
     const likeData = req.body;
     console.log('👍 Received like event:', likeData);
-    
+
     // Update like goal state
     if (!storage.state.likeGoal) {
         storage.state.likeGoal = { current: 0, goal: 100 };
     }
     const likeCount = likeData.likeCount || likeData.count || 1;
     storage.state.likeGoal.current = (storage.state.likeGoal.current || 0) + likeCount;
-    
+
     // Track individual user likes for top likers
     if (!storage.state.topLikers) {
         storage.state.topLikers = { topLikers: [] };
     }
-    
+
     const userId = likeData.uniqueId || likeData.nickname || 'anonymous';
     const userIndex = storage.state.topLikers.topLikers.findIndex(user => user.userId === userId);
-    
+
     if (userIndex !== -1) {
         // User already exists, update their like count
         storage.state.topLikers.topLikers[userIndex].totalAmount += likeCount;
@@ -297,43 +297,43 @@ app.post('/event/like', (req, res) => {
             lastSeen: Date.now()
         });
     }
-    
+
     // Sort users by total likes and keep top 10
     storage.state.topLikers.topLikers.sort((a, b) => b.totalAmount - a.totalAmount);
     storage.state.topLikers.topLikers = storage.state.topLikers.topLikers.slice(0, 10);
-    
+
     // Broadcast to like goal overlay with expected format
-    broadcast('likeGoal', { 
-        type: 'update', 
-        payload: { 
+    broadcast('likeGoal', {
+        type: 'update',
+        payload: {
             type: 'like',
             count: storage.state.likeGoal.current,
-            ...likeData 
-        } 
+            ...likeData
+        }
     });
-    
+
     // Broadcast updated top likers to the overlay
     broadcast('topLikers', { type: 'toplikers_update', users: storage.state.topLikers.topLikers });
-    
+
     broadcastAll({ type: 'tiktok-event', event: { type: 'like', ...likeData } });
-    
+
     res.json({ success: true, message: 'Like event broadcasted' });
 });
 
 app.post('/event/chat', (req, res) => {
     const chatData = req.body;
     console.log('💬 Received chat event:', chatData);
-    
+
     // Broadcast to chat clients with direct format
     broadcast('chat', { type: 'chat', ...chatData });
-    
+
     // Broadcast to all clients with both payload and event formats for compatibility
-    broadcastAll({ 
-        type: 'tiktok-event', 
+    broadcastAll({
+        type: 'tiktok-event',
         event: { type: 'chat', ...chatData },
         payload: { type: 'chat', ...chatData }
     });
-    
+
     res.json({ success: true, message: 'Chat event broadcasted' });
 });
 
@@ -341,17 +341,17 @@ app.post('/event/chat', (req, res) => {
 app.post('/api/chat-event', (req, res) => {
     const chatData = req.body;
     console.log('💬 [API] Received chat event:', chatData.type || 'unknown');
-    
+
     // Broadcast to chat clients with direct format
     broadcast('chat', { type: 'chat', ...chatData });
-    
+
     // Broadcast to all clients with both payload and event formats for compatibility
-    broadcastAll({ 
-        type: 'tiktok-event', 
+    broadcastAll({
+        type: 'tiktok-event',
         event: { type: 'chat', ...chatData },
         payload: { type: 'chat', ...chatData }
     });
-    
+
     res.json({ success: true, sentTo: storage.clients.chat.size, message: 'Chat event broadcasted' });
 });
 
@@ -359,38 +359,38 @@ app.post('/api/chat-event', (req, res) => {
 app.post('/api/chat-overlay', (req, res) => {
     const settings = req.body.settings || req.body;
     console.log('⚙️ Received chat overlay settings update:', settings);
-    
+
     // Store settings in state
     storage.state.chatOverlaySettings = settings;
-    
+
     // Broadcast to all connected chat overlay clients
-    broadcast('chat', { 
-        type: 'chat-overlay-settings-update', 
-        settings: settings 
+    broadcast('chat', {
+        type: 'chat-overlay-settings-update',
+        settings: settings
     });
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         sentTo: storage.clients.chat.size,
-        message: 'Chat overlay settings updated and broadcasted' 
+        message: 'Chat overlay settings updated and broadcasted'
     });
 });
 
 app.post('/event/share', (req, res) => {
     const shareData = req.body;
     console.log('📤 Received share event:', shareData);
-    
+
     broadcastAll({ type: 'tiktok-event', event: { type: 'share', ...shareData } });
-    
+
     res.json({ success: true, message: 'Share event broadcasted' });
 });
 
 app.post('/event/subscribe', (req, res) => {
     const subscribeData = req.body;
     console.log('⭐ Received subscribe event:', subscribeData);
-    
+
     broadcastAll({ type: 'tiktok-event', event: { type: 'subscribe', ...subscribeData } });
-    
+
     res.json({ success: true, message: 'Subscribe event broadcasted' });
 });
 
@@ -420,9 +420,9 @@ app.post('/overlay/luckywheel2/spin', (req, res) => {
 
 // Actions API
 app.get('/api/actions', (req, res) => {
-    res.json({ 
-        success: true, 
-        actions: storage.state.actions || [] 
+    res.json({
+        success: true,
+        actions: storage.state.actions || []
     });
 });
 
@@ -441,26 +441,26 @@ app.post('/api/actions', (req, res) => {
 // Initialize server with default data
 app.post('/api/initialize', (req, res) => {
     const { actions, wheelConfig, wheelConfig2 } = req.body;
-    
+
     if (actions && Array.isArray(actions)) {
         storage.state.actions = actions;
         console.log(`[Init] Loaded ${actions.length} actions`);
     }
-    
+
     if (wheelConfig && wheelConfig.boxes) {
         storage.state.luckyWheel = wheelConfig;
         console.log(`[Init] Loaded wheel 1 with ${wheelConfig.boxes.length} boxes`);
         // Broadcast to wheel clients
         broadcast('luckyWheel', { type: 'wheel-config-update', config: wheelConfig });
     }
-    
+
     if (wheelConfig2 && wheelConfig2.boxes) {
         storage.state.luckyWheel2 = wheelConfig2;
         console.log(`[Init] Loaded wheel 2 with ${wheelConfig2.boxes.length} boxes`);
         // Broadcast to wheel 2 clients
         broadcast('luckyWheel2', { type: 'wheel2-config-update', config: wheelConfig2 });
     }
-    
+
     res.json({ success: true, message: 'Server initialized' });
 });
 
@@ -484,8 +484,8 @@ app.post('/api/execute-action', (req, res) => {
     console.log('🎯 Browser overlay requested action execution:', action?.name || actionId);
     // Browser overlays are display-only. Actions are executed by the TikHub app.
     // This endpoint exists to prevent 404 errors in the browser console.
-    res.json({ 
-        success: true, 
+    res.json({
+        success: true,
         message: 'Action execution is handled by TikHub app',
         note: 'Browser overlays are for display only'
     });
@@ -512,57 +512,57 @@ app.post('/overlay/songrequest/update', (req, res) => {
     const { currentTrack, spotifyQueue } = req.body;
     if (currentTrack) storage.state.currentTrack = currentTrack;
     if (spotifyQueue) storage.state.spotifyQueue = spotifyQueue;
-    
-    broadcast('songRequest', { 
-        type: 'spotify_update', 
+
+    broadcast('songRequest', {
+        type: 'spotify_update',
         currentTrack: storage.state.currentTrack,
         spotifyQueue: storage.state.spotifyQueue
     });
-    
+
     res.json({ success: true, message: 'Spotify data updated' });
 });
 
 // Like Goal
 app.post('/overlay/likegoal/update', (req, res) => {
     const config = req.body;
-    
+
     // Merge with existing state to preserve count
     storage.state.likeGoal = {
         ...storage.state.likeGoal,
         ...config,
         current: config.count !== undefined ? config.count : (storage.state.likeGoal?.current || 0)
     };
-    
-    broadcast('likeGoal', { 
-        type: 'update', 
-        payload: { 
+
+    broadcast('likeGoal', {
+        type: 'update',
+        payload: {
             type: 'like',
-            ...storage.state.likeGoal 
-        } 
+            ...storage.state.likeGoal
+        }
     });
-    
+
     res.json({ success: true, message: 'Like goal updated' });
 });
 
 // Follow Goal
 app.post('/overlay/followgoal/update', (req, res) => {
     const config = req.body;
-    
+
     // Merge with existing state to preserve count
     storage.state.followGoal = {
         ...storage.state.followGoal,
         ...config,
         current: config.count !== undefined ? config.count : (storage.state.followGoal?.current || 0)
     };
-    
-    broadcast('followGoal', { 
-        type: 'update', 
-        payload: { 
+
+    broadcast('followGoal', {
+        type: 'update',
+        payload: {
             type: 'follow',
-            ...storage.state.followGoal 
-        } 
+            ...storage.state.followGoal
+        }
     });
-    
+
     res.json({ success: true, message: 'Follow goal updated' });
 });
 
@@ -572,20 +572,36 @@ app.get('/api/update-wingoal', (req, res) => {
 });
 
 app.post('/overlay/wingoal/update', (req, res) => {
-    storage.state.winGoal = req.body;
-    
+    const body = req.body || {};
+
+    // Normalise field name aliases: Electron app may send {count, goal} or {current, total}
+    const incoming = {
+        current: typeof body.current === 'number' ? body.current
+            : (typeof body.count === 'number' ? body.count : undefined),
+        total: typeof body.total === 'number' ? body.total
+            : (typeof body.goal === 'number' ? body.goal : undefined),
+        style: body.style !== undefined ? body.style : undefined,
+    };
+
+    // SAFE MERGE — never wipe existing values with undefined
+    const prev = storage.state.winGoal || { current: 0, total: 5, style: null };
+    storage.state.winGoal = {
+        current: incoming.current !== undefined ? incoming.current : prev.current,
+        total: incoming.total !== undefined ? incoming.total : prev.total,
+        style: incoming.style !== undefined ? incoming.style : prev.style,
+    };
+
     // Save win goal state to file for persistence
     try {
         const fs = require('fs');
         const path = require('path');
         const winGoalFilePath = path.join(__dirname, '..', 'wingoal.json');
-        
-        fs.writeFileSync(winGoalFilePath, JSON.stringify(req.body, null, 2));
+        fs.writeFileSync(winGoalFilePath, JSON.stringify(storage.state.winGoal, null, 2));
     } catch (error) {
         console.error('Error saving win goal state to file:', error);
     }
-    
-    broadcast('winGoal', { type: 'win-goal-update', ...req.body });
+
+    broadcast('winGoal', { type: 'win-goal-update', ...storage.state.winGoal });
     res.json({ success: true, message: 'Win goal updated' });
 });
 
@@ -676,17 +692,17 @@ app.get('/api/giftvsgift', (req, res) => {
 // Save Gift vs Gift configuration (left/right gifts, settings)
 app.post('/api/giftvsgift', (req, res) => {
     console.log('💾 [GiftVsGift] POST /api/giftvsgift - Saving config:', req.body);
-    
+
     // Merge with existing state to preserve counts
     storage.state.giftVsGift = {
         ...storage.state.giftVsGift,
         ...req.body
     };
-    
+
     // Broadcast the config update to all connected overlays
     broadcast('giftVsGift', { type: 'gift-vs-gift-config', ...storage.state.giftVsGift });
     console.log(`📡 [GiftVsGift] Config broadcasted to ${storage.clients.giftVsGift.size} clients`);
-    
+
     res.json({ success: true, message: 'Gift vs gift config saved' });
 });
 
@@ -725,9 +741,9 @@ app.post('/api/topstreak-settings', (req, res) => {
 app.post('/broadcast-event', (req, res) => {
     const { event, data } = req.body;
     console.log('📢 Broadcasting event:', event, data);
-    
+
     broadcastAll({ type: 'tiktok-event', event: event || data });
-    
+
     res.json({ success: true, message: 'Event broadcasted' });
 });
 
@@ -735,7 +751,7 @@ app.post('/broadcast-event', (req, res) => {
 app.get('/state/:overlayType', (req, res) => {
     const { overlayType } = req.params;
     const state = storage.state[overlayType];
-    
+
     res.json({
         success: true,
         state: state || null,
@@ -756,21 +772,21 @@ app.get('/api/goal-settings', (req, res) => {
 // Save goal settings (POST endpoint)
 app.post('/api/goal-settings', (req, res) => {
     console.log('📝 [Goal Settings] Saving settings:', req.body);
-    
+
     // Update likeGoal if provided
     if (req.body.likeGoal) {
         storage.state.likeGoal = { ...storage.state.likeGoal, ...req.body.likeGoal };
         broadcast('likeGoal', { type: 'update', payload: storage.state.likeGoal });
     }
-    
+
     // Update followGoal if provided
     if (req.body.followGoal) {
         storage.state.followGoal = { ...storage.state.followGoal, ...req.body.followGoal };
         broadcast('followGoal', { type: 'update', payload: storage.state.followGoal });
     }
-    
+
     console.log('✅ [Goal Settings] Settings saved and broadcasted');
-    
+
     res.json({
         success: true,
         likeGoal: storage.state.likeGoal,
@@ -783,21 +799,21 @@ app.post('/api/goal-settings', (req, res) => {
 app.post('/api/test/like', (req, res) => {
     const { count = 1 } = req.body;
     console.log(`🧪 Test like event: +${count}`);
-    
+
     // Update like goal
     storage.state.likeGoal.current = Math.min(
         storage.state.likeGoal.current + count,
         storage.state.likeGoal.goal
     );
-    
+
     // Broadcast to overlays
-    broadcast('likeGoal', { 
-        type: 'like-goal-update', 
-        ...storage.state.likeGoal 
+    broadcast('likeGoal', {
+        type: 'like-goal-update',
+        ...storage.state.likeGoal
     });
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         current: storage.state.likeGoal.current,
         goal: storage.state.likeGoal.goal
     });
@@ -806,21 +822,21 @@ app.post('/api/test/like', (req, res) => {
 app.post('/api/test/follow', (req, res) => {
     const { count = 1 } = req.body;
     console.log(`🧪 Test follow event: +${count}`);
-    
+
     // Update follow goal
     storage.state.followGoal.current = Math.min(
         storage.state.followGoal.current + count,
         storage.state.followGoal.goal
     );
-    
+
     // Broadcast to overlays
-    broadcast('followGoal', { 
-        type: 'follow-goal-update', 
-        ...storage.state.followGoal 
+    broadcast('followGoal', {
+        type: 'follow-goal-update',
+        ...storage.state.followGoal
     });
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         current: storage.state.followGoal.current,
         goal: storage.state.followGoal.goal
     });
@@ -829,17 +845,17 @@ app.post('/api/test/follow', (req, res) => {
 // Cut/Reset goal endpoints
 app.post('/api/cut/like', (req, res) => {
     console.log('✂️ Cutting like goal (resetting to 0)');
-    
+
     storage.state.likeGoal.current = 0;
-    
+
     // Broadcast to overlays
-    broadcast('likeGoal', { 
-        type: 'like-goal-update', 
-        ...storage.state.likeGoal 
+    broadcast('likeGoal', {
+        type: 'like-goal-update',
+        ...storage.state.likeGoal
     });
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         current: 0,
         goal: storage.state.likeGoal.goal,
         message: 'Like goal reset'
@@ -848,17 +864,17 @@ app.post('/api/cut/like', (req, res) => {
 
 app.post('/api/cut/follow', (req, res) => {
     console.log('✂️ Cutting follow goal (resetting to 0)');
-    
+
     storage.state.followGoal.current = 0;
-    
+
     // Broadcast to overlays
-    broadcast('followGoal', { 
-        type: 'follow-goal-update', 
-        ...storage.state.followGoal 
+    broadcast('followGoal', {
+        type: 'follow-goal-update',
+        ...storage.state.followGoal
     });
-    
-    res.json({ 
-        success: true, 
+
+    res.json({
+        success: true,
         current: 0,
         goal: storage.state.followGoal.goal,
         message: 'Follow goal reset'
@@ -869,10 +885,10 @@ app.post('/api/cut/follow', (req, res) => {
 wss.on('connection', (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const path = url.pathname;
-    
+
     // Determine overlay type from path
     let overlayType = 'general';
-    
+
     if (path.includes('/gift-bubbles') || path.includes('/giftbubbles')) {
         overlayType = 'giftBubbles';
     } else if (path.includes('/luckywheel2')) {
@@ -903,15 +919,15 @@ wss.on('connection', (ws, req) => {
         // New: minigame rectangle triggers overlay
         overlayType = 'minigameRect';
     }
-    
+
     // Log WebSocket connection
     console.log(`📡 WebSocket connected: ${overlayType} (path: ${path})`);
-    
+
     // Add to appropriate client set
     if (storage.clients[overlayType]) {
         storage.clients[overlayType].add(ws);
         console.log(`✅ ${overlayType} overlay connected (${storage.clients[overlayType].size} total)`);
-        
+
         // Send current state to new client
         const currentState = storage.state[overlayType];
         if (currentState) {
@@ -936,20 +952,20 @@ wss.on('connection', (ws, req) => {
             }
         }
     }
-    
+
     // Handle incoming messages from clients
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message.toString());
             console.log(`📨 [${overlayType}] Received message:`, data);
-            
+
             // Handle goal-completed events from browser overlays
             if (data.type === 'goal-completed') {
                 console.log(`🎉 [${overlayType}] Goal completed! Broadcasting to all clients...`);
-                
+
                 const goalType = data.goalType; // 'like' or 'follow'
                 const { count, goal, whenReached, actionOnFinish } = data;
-                
+
                 // Update server state
                 if (goalType === 'like' && storage.state.likeGoal) {
                     // Store original goal if not already stored
@@ -958,7 +974,7 @@ wss.on('connection', (ws, req) => {
                     }
                     const originalGoal = storage.state.likeGoal.originalGoal;
                     let newGoal = goal;
-                    
+
                     if (whenReached === 'double') {
                         newGoal = goal * 2;
                     } else if (whenReached === 'increase') {
@@ -968,33 +984,33 @@ wss.on('connection', (ws, req) => {
                     } else if (whenReached === 'hide') {
                         newGoal = 999999;
                     }
-                    
+
                     storage.state.likeGoal.current = 0;
                     storage.state.likeGoal.goal = newGoal;
-                    
+
                     console.log(`🎯 Like goal updated: ${goal} → ${newGoal} (behavior: ${whenReached})`);
-                    
+
                     // Broadcast to all clients
-                    broadcastAll({ 
-                        type: 'goal-completed', 
+                    broadcastAll({
+                        type: 'goal-completed',
                         goalType: 'like',
                         count: 0,
                         goal: newGoal,
                         whenReached,
                         actionOnFinish
                     });
-                    
+
                     // Broadcast reset count to like goal overlays
                     broadcast('likeGoal', {
                         type: 'reset-count'
                     });
-                    
+
                     // Broadcast updated goal to like goal overlays
                     broadcast('likeGoal', {
                         type: 'update-goal',
                         newGoal: newGoal
                     });
-                    
+
                 } else if (goalType === 'follow' && storage.state.followGoal) {
                     // Store original goal if not already stored
                     if (!storage.state.followGoal.originalGoal) {
@@ -1002,7 +1018,7 @@ wss.on('connection', (ws, req) => {
                     }
                     const originalGoal = storage.state.followGoal.originalGoal;
                     let newGoal = goal;
-                    
+
                     if (whenReached === 'double') {
                         newGoal = goal * 2;
                     } else if (whenReached === 'increase') {
@@ -1012,27 +1028,27 @@ wss.on('connection', (ws, req) => {
                     } else if (whenReached === 'hide') {
                         newGoal = 999999;
                     }
-                    
+
                     storage.state.followGoal.current = 0;
                     storage.state.followGoal.goal = newGoal;
-                    
+
                     console.log(`🎯 Follow goal updated: ${goal} → ${newGoal} (behavior: ${whenReached})`);
-                    
+
                     // Broadcast to all clients
-                    broadcastAll({ 
-                        type: 'goal-completed', 
+                    broadcastAll({
+                        type: 'goal-completed',
                         goalType: 'follow',
                         count: 0,
                         goal: newGoal,
                         whenReached,
                         actionOnFinish
                     });
-                    
+
                     // Broadcast reset count to follow goal overlays
                     broadcast('followGoal', {
                         type: 'reset-count'
                     });
-                    
+
                     // Broadcast updated goal to follow goal overlays
                     broadcast('followGoal', {
                         type: 'update-goal',
@@ -1044,7 +1060,7 @@ wss.on('connection', (ws, req) => {
             console.error(`Error parsing WebSocket message from ${overlayType}:`, error);
         }
     });
-    
+
     // Handle disconnection
     ws.on('close', () => {
         if (storage.clients[overlayType]) {
@@ -1052,7 +1068,7 @@ wss.on('connection', (ws, req) => {
             console.log(`❌ ${overlayType} overlay disconnected (${storage.clients[overlayType].size} remaining)`);
         }
     });
-    
+
     // Handle errors
     ws.on('error', (error) => {
         console.error(`WebSocket error for ${overlayType}:`, error);

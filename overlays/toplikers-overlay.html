@@ -503,12 +503,36 @@
             };
 
             // Auto-preview in editor/iframe
-            if (window.self !== window.top) {
-                setTimeout(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPreview = urlParams.get('preview') === '1';
+            
+            if (window.self !== window.top || isPreview) {
+                console.log('[TopLikers] Preview mode detected');
+                
+                // Run preview cycle
+                const previewCycle = () => {
                     if (typeof window.preview === 'function') {
                         window.preview();
                     }
-                }, 1000);
+                };
+                
+                // Initial preview
+                setTimeout(previewCycle, 1000);
+                
+                // Auto-cycle preview every 5 seconds
+                setInterval(() => {
+                    if (previewEnabled) {
+                        previewCycle();
+                    }
+                }, 5000);
+                
+                // Add demo interaction
+                window.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'toplikers-demo-refresh') {
+                        console.log('[TopLikers] Demo refresh triggered');
+                        previewCycle();
+                    }
+                });
             }
         });
 

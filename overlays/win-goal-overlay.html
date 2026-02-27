@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>Win Goal Overlay</title>
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100vw;
@@ -15,6 +17,7 @@
       align-items: center;
       justify-content: center;
     }
+
     #win-goal {
       display: flex;
       align-items: center;
@@ -30,6 +33,7 @@
       border: none;
       transition: all 0.2s;
     }
+
     #win-goal .icon {
       width: 44px;
       height: 44px;
@@ -38,16 +42,26 @@
       transform-origin: center center;
       animation: slowPop 3s ease-in-out infinite;
     }
+
     @keyframes slowPop {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.08); }
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.08);
+      }
     }
+
     #win-goal .label {
       font-weight: bold;
       font-size: 48px;
       letter-spacing: 2px;
       margin-right: 8px;
     }
+
     #win-goal .counter {
       font-weight: 900;
       font-size: 54px;
@@ -58,17 +72,20 @@
       display: flex;
       align-items: center;
     }
+
     #win-goal .slash {
       font-size: 44px;
       margin: 0 8px;
     }
   </style>
 </head>
+
 <body>
   <div id="win-goal">
     <img class="icon" src="/assets/overlay-icons/win game.png" alt="Win" />
     <span class="label">Win</span>
-    <span class="counter"><span id="win-count">0</span> <span class="slash">/</span> <span id="win-goal-num">5</span></span>
+    <span class="counter"><span id="win-count">0</span> <span class="slash">/</span> <span
+        id="win-goal-num">5</span></span>
   </div>
   <script>
     let ws = null;
@@ -77,11 +94,14 @@
     let reconnectTimeout = null;
 
     function updateWinGoalDisplay(data) {
-      // Update the overlay with the data
-      const current = data.current ?? 0;
+      // Normalise field names: server sends either {current,total} or {count,goal}
+      // Always prefer the explicit field; fall back to the alias; then fall back to 0/5
+      const current = data.current ?? data.count ?? 0;
+      const total = data.total ?? data.goal ?? 5;
+
       document.getElementById('win-count').textContent = String(current);
-      document.getElementById('win-goal-num').textContent = String(data.total ?? '5');
-      
+      document.getElementById('win-goal-num').textContent = String(total);
+
       // Apply any custom styles
       const el = document.getElementById('win-goal');
       const counterEl = el.querySelector('.counter');
@@ -91,21 +111,19 @@
         el.style.fontSize = data.style.fontSize ? data.style.fontSize + 'px' : '48px';
         el.style.color = data.style.winTextColor || '#fff';
         el.style.border = data.style.enableFontBorder ? `2px solid ${data.style.borderColor || '#000'}` : 'none';
-        // If later we support selecting different PNGs, update the image src here
         el.querySelector('.label').textContent = data.style.winGameText || 'Win';
         counterEl.style.background = data.style.counterBackgroundColor || '#2a2a2d';
         el.querySelector('.slash').style.color = data.style.winTextColor || '#fff';
-        
+
         // Set counter color: red for negative, custom color for positive/zero
         if (current < 0) {
-          counterEl.style.color = '#ff4444'; // Red for negative
+          counterEl.style.color = '#ff4444';
         } else {
           counterEl.style.color = data.style.counterColor || '#fff';
         }
       } else {
-        // No custom style - use default: red for negative, white for positive/zero
         if (current < 0) {
-          counterEl.style.color = '#ff4444'; // Red for negative
+          counterEl.style.color = '#ff4444';
         } else {
           counterEl.style.color = '#fff';
         }
@@ -131,10 +149,10 @@
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws/win-goal`;
-      
+
       try {
         ws = new WebSocket(wsUrl);
-        
+
         ws.onopen = () => {
           console.log('[Win Goal] WebSocket connected');
           reconnectAttempts = 0;
@@ -144,7 +162,13 @@
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'win-goal-update') {
+              // Direct broadcast update from server
               updateWinGoalDisplay(data);
+            } else if (data.type === 'initial-state' && data.state) {
+              // Server sends this snapshot every time a new WebSocket client connects.
+              // Without handling it the overlay would stay at 0/5 on every reconnect.
+              console.log('[Win Goal] Restoring state from server:', data.state);
+              updateWinGoalDisplay(data.state);
             }
           } catch (error) {
             console.error('[Win Goal] Error parsing WebSocket message:', error);
@@ -191,4 +215,5 @@
     });
   </script>
 </body>
+
 </html>
