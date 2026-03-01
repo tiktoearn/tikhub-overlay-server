@@ -158,8 +158,10 @@
     }
 
     function updateLeaderboard(data) {
+      console.log('[Leaderboard] Updating with data:', data);
       if (!data || data.length === 0) {
         leaderboardList.innerHTML = '<div class="empty-state">No data yet</div>';
+        console.log('[Leaderboard] No data to display');
         return;
       }
 

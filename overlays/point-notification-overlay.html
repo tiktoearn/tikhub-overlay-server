@@ -20,7 +20,7 @@
     #notifications {
       position: fixed;
       top: 20px;
-      right: 20px;
+      left: 20px;
       width: 280px;
       display: flex;
       flex-direction: column;
@@ -133,6 +133,12 @@
     const MAX_NOTIFICATIONS = 5;
 
     function showNotification(data) {
+      debugger;
+      console.log('[Point Notifications] showNotification called with:', JSON.stringify(data, null, 2));
+      console.log('[Point Notifications] Type:', data.type);
+      console.log('[Point Notifications] Points value:', data.points);
+      console.log('[Point Notifications] Has points?', data.hasOwnProperty('points'));
+      
       // Remove oldest if too many
       const notifications = notificationsContainer.children;
       if (notifications.length >= MAX_NOTIFICATIONS) {
@@ -147,19 +153,24 @@
       
       if (data.type === 'earned') {
         icon = '✨';
-        const points = data.points || 0;
-        pointsDisplay = `<div class="points">+${points}</div>`;
+        const pointsValue = data.points;
+        console.log('[Point Notifications] RAW points value:', pointsValue);
+        console.log('[Point Notifications] Type of points:', typeof pointsValue);
+        const points = pointsValue || 0;
+        console.log('[Point Notifications] Final points after || 0:', points);
+        pointsDisplay = `<div class="points" style="font-size: 18px; font-weight: 800; color: #ffd700; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">+${points}</div>`;
+        console.log('[Point Notifications] pointsDisplay HTML:', pointsDisplay);
       } else if (data.type === 'spent') {
         icon = '💸';
         const points = data.points || 0;
-        pointsDisplay = `<div class="points">-${points}</div>`;
-      } else if (data.type === 'redeemed') {
-        icon = '🎁';
-        pointsDisplay = '';
+        pointsDisplay = `<div class="points" style="display: block !important; font-size: 18px; font-weight: 800; color: #ffd700;">-${points}</div>`;
       } else if (data.type === 'balance') {
         icon = '💰';
         const points = data.points || 0;
-        pointsDisplay = `<div class="points">${points}</div>`;
+        pointsDisplay = `<div class="points" style="display: block !important; font-size: 18px; font-weight: 800; color: #ffd700;">${points}</div>`;
+      } else if (data.type === 'redeemed') {
+        icon = '🎁';
+        pointsDisplay = '';
       } else if (data.type === 'leaderboard') {
         icon = '🏆';
         pointsDisplay = '';
@@ -180,14 +191,17 @@
       console.log('[Point Notifications] Points:', data.points);
 
       notification.innerHTML = `
-        <img class="profile-picture" src="${profilePictureUrl}" alt="" onerror="this.onerror=null; this.src='./Tikhub.png'; console.log('[Point Notifications] Profile failed, using fallback');">
+        <img class="profile-picture" src="${profilePictureUrl}" alt="${data.username}" onerror="this.src='./Tikhub.png'">
         <div class="content">
-          <div class="username">@${data.username || 'Unknown'}</div>
-          <div class="message">${data.message || 'Points earned!'}</div>
+          <div class="username">@${data.username}</div>
+          <div class="message">${data.message}</div>
         </div>
         <div class="icon">${icon}</div>
         ${pointsDisplay}
       `;
+      
+      console.log('[Point Notifications] Final HTML:', notification.innerHTML);
+      console.log('[Point Notifications] pointsDisplay value:', pointsDisplay);
 
       notificationsContainer.appendChild(notification);
       
