@@ -610,6 +610,30 @@ app.get('/api/update-wingoal', (req, res) => {
     res.json(storage.state.winGoal);
 });
 
+// Points Leaderboard API
+app.get('/api/points-leaderboard', (req, res) => {
+    try {
+        // Get points data from storage (synced from main app)
+        const pointsData = storage.state.points || { users: {}, leaderboard: [] };
+        
+        // Convert to array format if needed
+        let leaderboard = [];
+        if (pointsData.leaderboard && Array.isArray(pointsData.leaderboard)) {
+            leaderboard = pointsData.leaderboard;
+        } else if (pointsData.users) {
+            leaderboard = Object.values(pointsData.users)
+                .sort((a, b) => (b.points || 0) - (a.points || 0))
+                .slice(0, 10);
+        }
+        
+        res.json({ success: true, leaderboard });
+        console.log('📊 Served points leaderboard:', leaderboard.length, 'users');
+    } catch (error) {
+        console.error('Error serving points leaderboard:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.post('/overlay/wingoal/update', (req, res) => {
     const body = req.body || {};
 
