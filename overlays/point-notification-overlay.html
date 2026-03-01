@@ -147,16 +147,19 @@
       
       if (data.type === 'earned') {
         icon = '✨';
-        pointsDisplay = `<div class="points">+${data.points}</div>`;
+        const points = data.points || 0;
+        pointsDisplay = `<div class="points">+${points}</div>`;
       } else if (data.type === 'spent') {
         icon = '💸';
-        pointsDisplay = `<div class="points">-${data.points}</div>`;
+        const points = data.points || 0;
+        pointsDisplay = `<div class="points">-${points}</div>`;
       } else if (data.type === 'redeemed') {
         icon = '🎁';
         pointsDisplay = '';
       } else if (data.type === 'balance') {
         icon = '💰';
-        pointsDisplay = `<div class="points">${data.points}</div>`;
+        const points = data.points || 0;
+        pointsDisplay = `<div class="points">${points}</div>`;
       } else if (data.type === 'leaderboard') {
         icon = '🏆';
         pointsDisplay = '';
@@ -172,12 +175,15 @@
       const profilePictureUrl = data.profilePictureUrl || 
         data.profileImage || 
         './Tikhub.png';
+      
+      console.log('[Point Notifications] Profile URL:', profilePictureUrl);
+      console.log('[Point Notifications] Points:', data.points);
 
       notification.innerHTML = `
-        <img class="profile-picture" src="${profilePictureUrl}" alt="${data.username}" onerror="this.src='./Tikhub.png'">
+        <img class="profile-picture" src="${profilePictureUrl}" alt="" onerror="this.onerror=null; this.src='./Tikhub.png'; console.log('[Point Notifications] Profile failed, using fallback');">
         <div class="content">
-          <div class="username">@${data.username}</div>
-          <div class="message">${data.message}</div>
+          <div class="username">@${data.username || 'Unknown'}</div>
+          <div class="message">${data.message || 'Points earned!'}</div>
         </div>
         <div class="icon">${icon}</div>
         ${pointsDisplay}
@@ -219,7 +225,13 @@
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'point-notification' || data.type === 'show-point-response') {
+          console.log('[Point Notifications] Received:', data.type, data);
+          if (data.type === 'point-notification' || 
+              data.type === 'earned' || 
+              data.type === 'spent' || 
+              data.type === 'redeemed' || 
+              data.type === 'balance' ||
+              data.type === 'show-point-response') {
             showNotification(data);
           }
         } catch (error) {
