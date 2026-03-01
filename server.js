@@ -426,6 +426,7 @@ app.post('/event/points', (req, res) => {
         points: pointData.points,
         totalPoints: pointData.totalPoints,
         rank: pointData.rank,
+        profilePictureUrl: pointData.profilePictureUrl || pointData.profileImage,
         timestamp: Date.now()
     });
 

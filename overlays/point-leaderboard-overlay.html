@@ -65,6 +65,15 @@
       transition: transform 0.2s;
     }
 
+    .profile-picture {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
+    }
+
     .leaderboard-item:hover {
       transform: translateX(4px);
       background: rgba(58, 141, 222, 0.2);
@@ -154,15 +163,23 @@
         return;
       }
 
-      leaderboardList.innerHTML = data.slice(0, 10).map((user, index) => `
+      leaderboardList.innerHTML = data.slice(0, 10).map((user, index) => {
+      // Get profile picture URL or use default
+      const profilePictureUrl = user.profilePictureUrl || 
+        user.profileImage || 
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=32`;
+      
+      return `
         <div class="leaderboard-item">
           <div class="rank ${getRankClass(index)}">${getRankDisplay(index)}</div>
+          <img class="profile-picture" src="${profilePictureUrl}" alt="${user.username}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=32'">
           <div class="user-info">
             <div class="username">${user.username}</div>
           </div>
           <div class="points">${user.points.toLocaleString()}</div>
         </div>
-      `).join('');
+      `;
+    }).join('');
 
       const now = new Date();
       updateTime.textContent = `Last updated: ${now.toLocaleTimeString()}`;

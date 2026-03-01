@@ -150,7 +150,13 @@
         pointsDisplay = '';
       }
 
+      // Get profile picture URL or use default
+      const profilePictureUrl = data.profilePictureUrl || 
+        data.profileImage || 
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}&background=random&color=fff&size=40`;
+
       notification.innerHTML = `
+        <img class="profile-picture" src="${profilePictureUrl}" alt="${data.username}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}&background=random&color=fff&size=40'">
         <div class="icon">${icon}</div>
         <div class="content">
           <div class="username">@${data.username}</div>
