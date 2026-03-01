@@ -151,7 +151,7 @@
       let icon = '💰';
       let pointsDisplay = '';
       
-      if (data.type === 'earned') {
+      if (data.type === 'earned' || data.type === 'point-notification') {
         icon = '✨';
         const pointsValue = data.points;
         console.log('[Point Notifications] RAW points value:', pointsValue);
