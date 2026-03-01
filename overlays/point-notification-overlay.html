@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Point Notifications</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #notifications {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+
+    .notification {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 4.7s;
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .notification.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .notification.earned {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .notification.spent {
+      background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+    }
+
+    .notification.redeemed {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .content {
+      flex: 1;
+      color: white;
+    }
+
+    .username {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .message {
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    .points {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffd700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="notifications"></div>
+
+  <script>
+    const notificationsContainer = document.getElementById('notifications');
+    const MAX_NOTIFICATIONS = 5;
+
+    function showNotification(data) {
+      // Remove oldest if too many
+      const notifications = notificationsContainer.children;
+      if (notifications.length >= MAX_NOTIFICATIONS) {
+        notificationsContainer.removeChild(notifications[0]);
+      }
+
+      const notification = document.createElement('div');
+      notification.className = `notification ${data.type}`;
+      
+      let icon = '💰';
+      let pointsDisplay = '';
+      
+      if (data.type === 'earned') {
+        icon = '✨';
+        pointsDisplay = `<div class="points">+${data.points}</div>`;
+      } else if (data.type === 'spent') {
+        icon = '💸';
+        pointsDisplay = `<div class="points">-${data.points}</div>`;
+      } else if (data.type === 'redeemed') {
+        icon = '🎁';
+        pointsDisplay = '';
+      } else if (data.type === 'balance') {
+        icon = '💰';
+        pointsDisplay = `<div class="points">${data.points}</div>`;
+      } else if (data.type === 'leaderboard') {
+        icon = '🏆';
+        pointsDisplay = '';
+      } else if (data.type === 'rewards') {
+        icon = '🎁';
+        pointsDisplay = '';
+      } else if (data.type === 'error') {
+        icon = '❌';
+        pointsDisplay = '';
+      }
+
+      notification.innerHTML = `
+        <div class="icon">${icon}</div>
+        <div class="content">
+          <div class="username">@${data.username}</div>
+          <div class="message">${data.message}</div>
+        </div>
+        ${pointsDisplay}
+      `;
+
+      notificationsContainer.appendChild(notification);
+      
+      // Trigger animation
+      setTimeout(() => notification.classList.add('show'), 10);
+
+      // Remove after 5 seconds
+      setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.3s ease-in';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notificationsContainer.removeChild(notification);
+          }
+        }, 300);
+      }, 5000);
+    }
+
+    // Connect to overlay server WebSocket
+    const WS_URL = window.location.origin.replace(/^http/, 'ws') + '/ws/points';
+    let ws;
+    let reconnectTimeout;
+
+    function connect() {
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        console.log('[Point Notifications] Connected to overlay server');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'point-notification' || data.type === 'show-point-response') {
+            showNotification(data);
+          }
+        } catch (error) {
+          console.error('[Point Notifications] Error parsing message:', error);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('[Point Notifications] Disconnected, reconnecting in 3s...');
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Point Notifications] WebSocket error:', error);
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>
