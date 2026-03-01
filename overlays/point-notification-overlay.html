@@ -21,29 +21,37 @@
       position: fixed;
       top: 20px;
       right: 20px;
-      width: 400px;
+      width: 280px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       z-index: 9999;
     }
 
     .notification {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 12px;
-      padding: 16px 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
       display: flex;
       align-items: center;
-      gap: 12px;
-      animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 4.7s;
+      gap: 10px;
       opacity: 0;
       transform: translateX(100%);
+      transition: all 0.3s ease-out;
+      min-height: 50px;
+      margin-bottom: 8px;
     }
 
     .notification.show {
       opacity: 1;
       transform: translateX(0);
+    }
+
+    .notification.hiding {
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease-in;
     }
 
     .notification.earned {
@@ -58,32 +66,51 @@
       background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     }
 
+    .profile-picture {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      flex-shrink: 0;
+    }
+
     .icon {
-      font-size: 32px;
+      font-size: 20px;
       flex-shrink: 0;
     }
 
     .content {
       flex: 1;
       color: white;
+      min-width: 0;
     }
 
     .username {
       font-weight: 700;
-      font-size: 16px;
-      margin-bottom: 4px;
+      font-size: 13px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .message {
-      font-size: 14px;
+      font-size: 11px;
       opacity: 0.95;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .points {
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 800;
       color: #ffd700;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+      margin-left: auto;
+      padding-left: 8px;
     }
 
     @keyframes slideIn {
@@ -94,15 +121,6 @@
       to {
         opacity: 1;
         transform: translateX(0);
-      }
-    }
-
-    @keyframes fadeOut {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
       }
     }
   </style>
@@ -153,31 +171,36 @@
       // Get profile picture URL or use default
       const profilePictureUrl = data.profilePictureUrl || 
         data.profileImage || 
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}&background=random&color=fff&size=40`;
+        './Tikhub.png';
 
       notification.innerHTML = `
-        <img class="profile-picture" src="${profilePictureUrl}" alt="${data.username}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}&background=random&color=fff&size=40'">
-        <div class="icon">${icon}</div>
+        <img class="profile-picture" src="${profilePictureUrl}" alt="${data.username}" onerror="this.src='./Tikhub.png'">
         <div class="content">
           <div class="username">@${data.username}</div>
           <div class="message">${data.message}</div>
         </div>
+        <div class="icon">${icon}</div>
         ${pointsDisplay}
       `;
 
       notificationsContainer.appendChild(notification);
       
-      // Trigger animation
-      setTimeout(() => notification.classList.add('show'), 10);
+      // Trigger slide-in animation
+      requestAnimationFrame(() => {
+        notification.classList.add('show');
+      });
 
-      // Remove after 5 seconds
+      // Remove after 5 seconds with smooth fade-out
       setTimeout(() => {
-        notification.style.animation = 'fadeOut 0.3s ease-in';
+        notification.classList.remove('show');
+        notification.classList.add('hiding');
+        
+        // Wait for fade-out transition to complete before removing
         setTimeout(() => {
           if (notification.parentNode) {
             notificationsContainer.removeChild(notification);
           }
-        }, 300);
+        }, 350);
       }, 5000);
     }
 

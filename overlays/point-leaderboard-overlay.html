@@ -167,12 +167,12 @@
       // Get profile picture URL or use default
       const profilePictureUrl = user.profilePictureUrl || 
         user.profileImage || 
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=32`;
+        './Tikhub.png';
       
       return `
         <div class="leaderboard-item">
           <div class="rank ${getRankClass(index)}">${getRankDisplay(index)}</div>
-          <img class="profile-picture" src="${profilePictureUrl}" alt="${user.username}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff&size=32'">
+          <img class="profile-picture" src="${profilePictureUrl}" alt="${user.username}" onerror="this.src='./Tikhub.png'">
           <div class="user-info">
             <div class="username">${user.username}</div>
           </div>
