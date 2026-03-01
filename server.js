@@ -31,6 +31,7 @@ const storage = {
         topStreak: new Set(),
         topLikers: new Set(),
         giftVsGift: new Set(),
+        points: new Set(), // Point notifications overlay
         // New: Minigame rectangle overlay (triggers grid)
         minigameRect: new Set()
     },
@@ -410,6 +411,25 @@ app.post('/event/subscribe', (req, res) => {
     broadcastAll({ type: 'tiktok-event', event: { type: 'subscribe', ...subscribeData } });
 
     res.json({ success: true, message: 'Subscribe event broadcasted' });
+});
+
+// Send point event to overlay
+app.post('/event/points', (req, res) => {
+    const pointData = req.body;
+    console.log('💰 Received point event:', pointData);
+
+    // Broadcast to point notification overlays
+    broadcast('points', {
+        type: 'point-notification',
+        username: pointData.nickname || pointData.uniqueId,
+        message: pointData.reason || 'Points earned!',
+        points: pointData.points,
+        totalPoints: pointData.totalPoints,
+        rank: pointData.rank,
+        timestamp: Date.now()
+    });
+
+    res.json({ success: true, message: 'Point event broadcasted' });
 });
 
 // Lucky Wheel
@@ -950,6 +970,8 @@ wss.on('connection', (ws, req) => {
         overlayType = 'topLikers';
     } else if (path.includes('/giftvsgift') || path.includes('/gift-vs-gift')) {
         overlayType = 'giftVsGift';
+    } else if (path.includes('/points')) {
+        overlayType = 'points';
     } else if (path.includes('/minigame-rect')) {
         // New: minigame rectangle triggers overlay
         overlayType = 'minigameRect';
